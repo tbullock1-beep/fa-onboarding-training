@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assembly Quiz</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh; padding: 20px; color: #333;
+}
+.container { max-width: 700px; margin: 0 auto; }
+.header { text-align: center; color: #fff; padding: 30px 20px; }
+.header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+.header .meta { font-size: 14px; opacity: 0.9; }
+.progress-bar { background: rgba(255,255,255,0.3); border-radius: 10px; height: 8px; margin: 20px 0; overflow: hidden; }
+.progress-fill { background: #fff; height: 100%; width: 0%; transition: width 0.4s ease; border-radius: 10px; }
+.question { background: #fff; border-radius: 16px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; }
+.question.active { display: block; }
+.q-header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; color: #888; }
+.q-number { font-weight: 600; color: #667eea; }
+.q-text { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; color: #222; }
+.options { display: flex; flex-direction: column; gap: 12px; }
+.option-wrapper { display: flex; flex-direction: column; }
+.option {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px;
+  border: 2px solid #e8e8e8; border-radius: 12px; background: #fafafa;
+  cursor: pointer; transition: all 0.2s; text-align: left; font-size: 15px; width: 100%;
+}
+[dir="rtl"] .option { text-align: right; flex-direction: row-reverse; }
+.option:hover:not(.disabled) { border-color: #667eea; background: #f5f3ff; }
+.option.selected { border-color: #667eea; background: #ede9fe; }
+.option.correct { border-color: #22c55e; background: #dcfce7; }
+.option.incorrect { border-color: #ef4444; background: #fee2e2; }
+.option.disabled { cursor: default; }
+.option.show-correct { border-color: #22c55e; background: #dcfce7; }
+.opt-label {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%; background: #e8e8e8;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.option.selected .opt-label { background: #667eea; color: #fff; }
+.option.correct .opt-label { background: #22c55e; color: #fff; }
+.option.incorrect .opt-label { background: #ef4444; color: #fff; }
+.option.show-correct .opt-label { background: #22c55e; color: #fff; }
+.opt-text { padding-top: 5px; line-height: 1.5; }
+
+/* Individual option feedback */
+.option-feedback {
+  margin: 8px 0 4px 46px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+[dir="rtl"] .option-feedback { margin-left: 0; margin-right: 46px; }
+.option-feedback.correct-feedback {
+  background: #dcfce7;
+  border-left: 3px solid #22c55e;
+}
+.option-feedback.incorrect-feedback {
+  background: #fef3f2;
+  border-left: 3px solid #fca5a5;
+}
+[dir="rtl"] .option-feedback.correct-feedback,
+[dir="rtl"] .option-feedback.incorrect-feedback {
+  border-left: none;
+  border-right: 3px solid;
+}
+[dir="rtl"] .option-feedback.correct-feedback { border-right-color: #22c55e; }
+[dir="rtl"] .option-feedback.incorrect-feedback { border-right-color: #fca5a5; }
+.feedback-status {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.feedback-status.correct { color: #166534; }
+.feedback-status.incorrect { color: #991b1b; }
+.feedback-rationale { color: #444; }
+
+/* Hint box */
+.hint-box {
+  margin: 12px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+.hint-toggle {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hint-toggle:hover { background: #fef3c7; }
+.hint-content {
+  padding: 0 16px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s, padding 0.3s;
+  font-size: 14px;
+  color: #78350f;
+  line-height: 1.5;
+}
+.hint-box.show .hint-content {
+  padding: 0 16px 12px;
+  max-height: 200px;
+}
+
+.next-btn {
+  margin-top: 20px; width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none;
+  border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.next-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+.hidden { display: none !important; }
+.results { background: #fff; border-radius: 16px; padding: 40px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; }
+.results.active { display: block; }
+.results h2 { font-size: 28px; margin-bottom: 10px; color: #333; }
+.results .score { font-size: 64px; font-weight: 700; color: #667eea; margin: 20px 0; }
+.results .score-text { font-size: 18px; color: #666; margin-bottom: 30px; }
+.restart-btn {
+  padding: 14px 40px; background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+
+/* Math CSS */
+.math, .math-block { font-family: "Cambria Math", "Times New Roman", Times, serif; font-style: italic; }
+.math-block { display: block; text-align: center; margin: 10px 0; font-size: 110%; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 3px; font-size: 0.9em; }
+.frac-num { border-bottom: 1px solid currentColor; padding: 0 4px 2px; line-height: 1.2; }
+.frac-den { padding: 2px 4px 0; line-height: 1.2; }
+.sqrt { white-space: nowrap; }
+.sqrt-content { border-top: 1px solid currentColor; padding: 0 3px; margin-left: 2px; }
+sup, sub { font-size: 0.75em; }
+sup { vertical-align: super; }
+sub { vertical-align: sub; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Assembly Quiz</h1>
+    <div class="meta">10 questions</div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+  <div id="quiz-container">
+        <div class="question" data-index="0">
+          <div class="q-header">
+            <span class="q-number">Question 1</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">According to the training guide, what is the standard prefix for all BioTek finished assembly numbers?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The guide states that every assembly number starts with ninety dash as the standard prefix for finished assemblies.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">90-</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The guide states that every assembly number starts with ninety dash as the standard prefix for finished assemblies.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="While many assembly numbers contain an 8, the standard prefix mentioned for all sets is 90-.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">80-</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While many assembly numbers contain an 8, the standard prefix mentioned for all sets is 90-.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="The prefix 10- is not mentioned; the text specifies 90- as the identifier for finished packaging sets.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">10-</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The prefix 10- is not mentioned; the text specifies 90- as the identifier for finished packaging sets.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="Although BP might stand for BioTek Packaging, the text explicitly identifies 90- as the standard numerical prefix.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">BP-</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Although BP might stand for BioTek Packaging, the text explicitly identifies 90- as the standard numerical prefix.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="1">
+          <div class="q-header">
+            <span class="q-number">Question 2</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">Which product is ranked as the number one item by production volume for 2025?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="Epoch 2 is ranked second with 822 sets, following closely behind the top item.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">Epoch 2</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Epoch 2 is ranked second with 822 sets, following closely behind the top item.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="The H1 Main is the top product by volume, with a total of 1,059 sets produced annually.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">H1 Main</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The H1 Main is the top product by volume, with a total of 1,059 sets produced annually.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="The Take 3 Set is ranked third with 793 sets.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Take 3 Set</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Take 3 Set is ranked third with 793 sets.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="Synergy ranks ninth with 361 sets, well below the highest-volume item.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Synergy</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Synergy ranks ninth with 361 sets, well below the highest-volume item.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="2">
+          <div class="q-header">
+            <span class="q-number">Question 3</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">How does Franklin August Trading typically manage the production schedule for these packaging sets?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="The guide explicitly states that they do not produce these in a steady monthly stream.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">Steady monthly production of equal amounts</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The guide explicitly states that they do not produce these in a steady monthly stream.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="The text describes batching units together rather than fulfilling individual daily requests.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">Daily assembly based on individual orders</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The text describes batching units together rather than fulfilling individual daily requests.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="true" data-rationale="Production happens in batches (like 40 to 50 sets at a time), leading to fluctuations throughout the year rather than a constant rate.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Batch production creating peaks and valleys</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Production happens in batches (like 40 to 50 sets at a time), leading to fluctuations throughout the year rather than a constant rate.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The guide mentions multiple runs per year for various products, such as 2 to 4 runs for the Take 3 Set.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Annual production in a single large run</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The guide mentions multiple runs per year for various products, such as 2 to 4 runs for the Take 3 Set.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="3">
+          <div class="q-header">
+            <span class="q-number">Question 4</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">What is the specific assembly number for the Epoch 2 packaging set?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The assembly number for Epoch 2 is explicitly listed as 90-1333003.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">90-1333003</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The assembly number for Epoch 2 is explicitly listed as 90-1333003.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="This number belongs to the standard Epoch set, which Employee A notes is a completely different sequence.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">90-7203006</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">This number belongs to the standard Epoch set, which Employee A notes is a completely different sequence.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="This is the assembly number for the H1 Main, the number one ranked product.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">90-8043033</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">This is the assembly number for the H1 Main, the number one ranked product.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="This number identifies the Take 3 Set, ranked third in volume.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">90-4693003</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">This number identifies the Take 3 Set, ranked third in volume.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="4">
+          <div class="q-header">
+            <span class="q-number">Question 5</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">The Take 3 Set is a 'small, simple set'. How many times per year is it typically produced?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="Employee B specifically asks if they make 66 sets every month, and Employee A clarifies that they do not.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">Every month (12 times)</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Employee B specifically asks if they make 66 sets every month, and Employee A clarifies that they do not.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="Because it is a small, simple set, it is run 2 to 4 times per year in larger batches of 150 to 250.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">2 to 4 times per year</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Because it is a small, simple set, it is run 2 to 4 times per year in larger batches of 150 to 250.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="While it has fewer runs than complex items, it is still produced more than once annually.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Only once per year</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While it has fewer runs than complex items, it is still produced more than once annually.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The batch sizes of 150 to 250 would be too large for a weekly schedule based on the annual volume of 793.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Weekly</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The batch sizes of 150 to 250 would be too large for a weekly schedule based on the annual volume of 793.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="5">
+          <div class="q-header">
+            <span class="q-number">Question 6</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">Which of the following products is described as one of the most complex assemblies, featuring multiple nested boxes?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="H1 Main is a large set, but the Cytation Main is specifically noted for its complexity and nested components.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">H1 Main</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">H1 Main is a large set, but the Cytation Main is specifically noted for its complexity and nested components.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="The Washer Accessory is a medium-sized set for shipping accessories, not a highly complex nested unit.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">Washer Accessory</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Washer Accessory is a medium-sized set for shipping accessories, not a highly complex nested unit.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="true" data-rationale="The guide highlights the Cytation Main (90-1223018) as one of the most complex builds with multiple nested boxes.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Cytation Main</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The guide highlights the Cytation Main (90-1223018) as one of the most complex builds with multiple nested boxes.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The Biostacker Accessory is actually described as the simplest and lowest-cost item.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Biostacker Accessory</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Biostacker Accessory is actually described as the simplest and lowest-cost item.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="6">
+          <div class="q-header">
+            <span class="q-number">Question 7</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">What is the approximate combined production volume of the Top 5 products?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The summary section notes that the top five products together account for over 4,000 of the 8,849 total sets.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">Over 4,000 sets</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The summary section notes that the top five products together account for over 4,000 of the 8,849 total sets.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="This is the total production volume for all top 20 items, not just the top five.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">Exactly 8,849 sets</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">This is the total production volume for all top 20 items, not just the top five.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="The H1 Main alone accounts for over 1,000 sets; the top five combined are much higher.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Around 1,000 sets</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The H1 Main alone accounts for over 1,000 sets; the top five combined are much higher.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The first three items alone nearly reach 2,700 sets, making this estimate too low.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Approximately 2,500 sets</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The first three items alone nearly reach 2,700 sets, making this estimate too low.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="7">
+          <div class="q-header">
+            <span class="q-number">Question 8</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">The Immucor (90-8063024) is a large set. Which component is specifically mentioned as being part of its construction?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The guide mentions the Immucor main unit is a complex set that includes a plywood base panel.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">A plywood base panel</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The guide mentions the Immucor main unit is a complex set that includes a plywood base panel.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="The text mentions foam and corrugated materials but does not cite plastic molded trays for the Immucor.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">A plastic molded tray</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The text mentions foam and corrugated materials but does not cite plastic molded trays for the Immucor.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="While high-performance and double-wall boxes are mentioned, triple-wall is not specified for this product.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Triple-wall corrugated board</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While high-performance and double-wall boxes are mentioned, triple-wall is not specified for this product.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The construction involves corrugated boxes and a plywood base, not metal supports.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Aluminum support struts</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The construction involves corrugated boxes and a plywood base, not metal supports.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="8">
+          <div class="q-header">
+            <span class="q-number">Question 9</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">Which assembly number corresponds to the H1 Dispenser, and how does it relate to the H1 Main?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The H1 Dispenser is 90-8043032, while the H1 Main is 90-8043033, making them consecutive numbers.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">90-8043032; it is one digit off from the H1 Main</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The H1 Dispenser is 90-8043032, while the H1 Main is 90-8043033, making them consecutive numbers.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="90-1223020 is the Cytation Accessory, and its volume (282) differs from the H1 Dispenser (217).">
+            <span class="opt-label">B</span>
+            <span class="opt-text">90-1223020; it is produced in identical volumes</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">90-1223020 is the Cytation Accessory, and its volume (282) differs from the H1 Dispenser (217).</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="The Main unit and the Dispenser have distinct, though similar, identification numbers.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">90-8043033; they share the same assembly number</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Main unit and the Dispenser have distinct, though similar, identification numbers.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="90-7313001 is the Biostacker Accessory, which is unrelated to the H1 product line.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">90-7313001; it is the lowest-cost item</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">90-7313001 is the Biostacker Accessory, which is unrelated to the H1 product line.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="9">
+          <div class="q-header">
+            <span class="q-number">Question 10</span>
+            <span class="q-of">/ 10</span>
+          </div>
+          <div class="q-text">The MFXPW Main packaging set (90-1263002) is designed for which BioTek instrument?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The guide specifies that the MFXPW Main is used to ship the MultiFlo FX multimode dispenser.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">MultiFlo FX multimode dispenser</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The guide specifies that the MFXPW Main is used to ship the MultiFlo FX multimode dispenser.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="The Washer Accessory (90-7103013) is the set designed for the ELx405 microplate washer.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">Microplate Washer ELx405</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Washer Accessory (90-7103013) is the set designed for the ELx405 microplate washer.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="The Biostacker 3 (90-1163003) is intended for the BioStack instrument.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">BioStack microplate stacker</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Biostacker 3 (90-1163003) is intended for the BioStack instrument.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The Cytation Main (90-1223018) is the assembly for the cell imaging reader.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Cytation cell imaging reader</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The Cytation Main (90-1223018) is the assembly for the cell imaging reader.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      </div>
+  <div class="results" id="results">
+    <h2>Quiz Complete!</h2>
+    <div class="score" id="score">0%</div>
+    <div class="score-text" id="score-text"></div>
+    <button class="restart-btn" onclick="restart()">Try Again</button>
+  </div>
+</div>
+<script>
+const quizData = [{"question":"According to the training guide, what is the standard prefix for all BioTek finished assembly numbers?","hint":"","options":[{"label":"A","text":"90-","isCorrect":true,"rationale":"The guide states that every assembly number starts with ninety dash as the standard prefix for finished assemblies."},{"label":"B","text":"80-","isCorrect":false,"rationale":"While many assembly numbers contain an 8, the standard prefix mentioned for all sets is 90-."},{"label":"C","text":"10-","isCorrect":false,"rationale":"The prefix 10- is not mentioned; the text specifies 90- as the identifier for finished packaging sets."},{"label":"D","text":"BP-","isCorrect":false,"rationale":"Although BP might stand for BioTek Packaging, the text explicitly identifies 90- as the standard numerical prefix."}]},{"question":"Which product is ranked as the number one item by production volume for 2025?","hint":"","options":[{"label":"A","text":"Epoch 2","isCorrect":false,"rationale":"Epoch 2 is ranked second with 822 sets, following closely behind the top item."},{"label":"B","text":"H1 Main","isCorrect":true,"rationale":"The H1 Main is the top product by volume, with a total of 1,059 sets produced annually."},{"label":"C","text":"Take 3 Set","isCorrect":false,"rationale":"The Take 3 Set is ranked third with 793 sets."},{"label":"D","text":"Synergy","isCorrect":false,"rationale":"Synergy ranks ninth with 361 sets, well below the highest-volume item."}]},{"question":"How does Franklin August Trading typically manage the production schedule for these packaging sets?","hint":"","options":[{"label":"A","text":"Steady monthly production of equal amounts","isCorrect":false,"rationale":"The guide explicitly states that they do not produce these in a steady monthly stream."},{"label":"B","text":"Daily assembly based on individual orders","isCorrect":false,"rationale":"The text describes batching units together rather than fulfilling individual daily requests."},{"label":"C","text":"Batch production creating peaks and valleys","isCorrect":true,"rationale":"Production happens in batches (like 40 to 50 sets at a time), leading to fluctuations throughout the year rather than a constant rate."},{"label":"D","text":"Annual production in a single large run","isCorrect":false,"rationale":"The guide mentions multiple runs per year for various products, such as 2 to 4 runs for the Take 3 Set."}]},{"question":"What is the specific assembly number for the Epoch 2 packaging set?","hint":"","options":[{"label":"A","text":"90-1333003","isCorrect":true,"rationale":"The assembly number for Epoch 2 is explicitly listed as 90-1333003."},{"label":"B","text":"90-7203006","isCorrect":false,"rationale":"This number belongs to the standard Epoch set, which Employee A notes is a completely different sequence."},{"label":"C","text":"90-8043033","isCorrect":false,"rationale":"This is the assembly number for the H1 Main, the number one ranked product."},{"label":"D","text":"90-4693003","isCorrect":false,"rationale":"This number identifies the Take 3 Set, ranked third in volume."}]},{"question":"The Take 3 Set is a 'small, simple set'. How many times per year is it typically produced?","hint":"","options":[{"label":"A","text":"Every month (12 times)","isCorrect":false,"rationale":"Employee B specifically asks if they make 66 sets every month, and Employee A clarifies that they do not."},{"label":"B","text":"2 to 4 times per year","isCorrect":true,"rationale":"Because it is a small, simple set, it is run 2 to 4 times per year in larger batches of 150 to 250."},{"label":"C","text":"Only once per year","isCorrect":false,"rationale":"While it has fewer runs than complex items, it is still produced more than once annually."},{"label":"D","text":"Weekly","isCorrect":false,"rationale":"The batch sizes of 150 to 250 would be too large for a weekly schedule based on the annual volume of 793."}]},{"question":"Which of the following products is described as one of the most complex assemblies, featuring multiple nested boxes?","hint":"","options":[{"label":"A","text":"H1 Main","isCorrect":false,"rationale":"H1 Main is a large set, but the Cytation Main is specifically noted for its complexity and nested components."},{"label":"B","text":"Washer Accessory","isCorrect":false,"rationale":"The Washer Accessory is a medium-sized set for shipping accessories, not a highly complex nested unit."},{"label":"C","text":"Cytation Main","isCorrect":true,"rationale":"The guide highlights the Cytation Main (90-1223018) as one of the most complex builds with multiple nested boxes."},{"label":"D","text":"Biostacker Accessory","isCorrect":false,"rationale":"The Biostacker Accessory is actually described as the simplest and lowest-cost item."}]},{"question":"What is the approximate combined production volume of the Top 5 products?","hint":"","options":[{"label":"A","text":"Over 4,000 sets","isCorrect":true,"rationale":"The summary section notes that the top five products together account for over 4,000 of the 8,849 total sets."},{"label":"B","text":"Exactly 8,849 sets","isCorrect":false,"rationale":"This is the total production volume for all top 20 items, not just the top five."},{"label":"C","text":"Around 1,000 sets","isCorrect":false,"rationale":"The H1 Main alone accounts for over 1,000 sets; the top five combined are much higher."},{"label":"D","text":"Approximately 2,500 sets","isCorrect":false,"rationale":"The first three items alone nearly reach 2,700 sets, making this estimate too low."}]},{"question":"The Immucor (90-8063024) is a large set. Which component is specifically mentioned as being part of its construction?","hint":"","options":[{"label":"A","text":"A plywood base panel","isCorrect":true,"rationale":"The guide mentions the Immucor main unit is a complex set that includes a plywood base panel."},{"label":"B","text":"A plastic molded tray","isCorrect":false,"rationale":"The text mentions foam and corrugated materials but does not cite plastic molded trays for the Immucor."},{"label":"C","text":"Triple-wall corrugated board","isCorrect":false,"rationale":"While high-performance and double-wall boxes are mentioned, triple-wall is not specified for this product."},{"label":"D","text":"Aluminum support struts","isCorrect":false,"rationale":"The construction involves corrugated boxes and a plywood base, not metal supports."}]},{"question":"Which assembly number corresponds to the H1 Dispenser, and how does it relate to the H1 Main?","hint":"","options":[{"label":"A","text":"90-8043032; it is one digit off from the H1 Main","isCorrect":true,"rationale":"The H1 Dispenser is 90-8043032, while the H1 Main is 90-8043033, making them consecutive numbers."},{"label":"B","text":"90-1223020; it is produced in identical volumes","isCorrect":false,"rationale":"90-1223020 is the Cytation Accessory, and its volume (282) differs from the H1 Dispenser (217)."},{"label":"C","text":"90-8043033; they share the same assembly number","isCorrect":false,"rationale":"The Main unit and the Dispenser have distinct, though similar, identification numbers."},{"label":"D","text":"90-7313001; it is the lowest-cost item","isCorrect":false,"rationale":"90-7313001 is the Biostacker Accessory, which is unrelated to the H1 product line."}]},{"question":"The MFXPW Main packaging set (90-1263002) is designed for which BioTek instrument?","hint":"","options":[{"label":"A","text":"MultiFlo FX multimode dispenser","isCorrect":true,"rationale":"The guide specifies that the MFXPW Main is used to ship the MultiFlo FX multimode dispenser."},{"label":"B","text":"Microplate Washer ELx405","isCorrect":false,"rationale":"The Washer Accessory (90-7103013) is the set designed for the ELx405 microplate washer."},{"label":"C","text":"BioStack microplate stacker","isCorrect":false,"rationale":"The Biostacker 3 (90-1163003) is intended for the BioStack instrument."},{"label":"D","text":"Cytation cell imaging reader","isCorrect":false,"rationale":"The Cytation Main (90-1223018) is the assembly for the cell imaging reader."}]}];
+const tr = {"correct":"Correct!","incorrect":"Incorrect","next":"Next Question →","seeResults":"See Results","complete":"Quiz Complete!","scoreText":"You got {correct} out of {total} correct","tryAgain":"Try Again","rightAnswer":"Right answer","notQuite":"Not quite"};
+let currentQ = 0, correctCount = 0, answered = false;
+
+function init() {
+  document.querySelectorAll('.question').forEach((q, i) => q.classList.toggle('active', i === 0));
+  updateProgress();
+  document.querySelectorAll('.option').forEach(opt => opt.addEventListener('click', () => selectOption(opt)));
+  document.querySelectorAll('.next-btn').forEach(btn => btn.addEventListener('click', nextQuestion));
+}
+
+function selectOption(opt) {
+  if (answered) return;
+  answered = true;
+  const q = opt.closest('.question');
+  const options = q.querySelectorAll('.option');
+  const nextBtn = q.querySelector('.next-btn');
+  const isCorrect = opt.dataset.correct === 'true';
+  
+  // Mark all options as disabled
+  options.forEach(o => o.classList.add('disabled'));
+  
+  // Style selected option
+  opt.classList.add('selected', isCorrect ? 'correct' : 'incorrect');
+  
+  // Show correct answer if wrong
+  if (!isCorrect) {
+    const correctOpt = [...options].find(o => o.dataset.correct === 'true');
+    if (correctOpt) correctOpt.classList.add('show-correct');
+  }
+  
+  if (isCorrect) correctCount++;
+  
+  // Show feedback for ALL options that have rationale
+  options.forEach(o => {
+    const wrapper = o.closest('.option-wrapper');
+    const feedback = wrapper.querySelector('.option-feedback');
+    const rationale = o.dataset.rationale;
+    const isThisCorrect = o.dataset.correct === 'true';
+    
+    if (rationale && rationale.trim()) {
+      feedback.classList.remove('hidden');
+      feedback.classList.add(isThisCorrect ? 'correct-feedback' : 'incorrect-feedback');
+      
+      const statusEl = feedback.querySelector('.feedback-status');
+      statusEl.className = 'feedback-status ' + (isThisCorrect ? 'correct' : 'incorrect');
+      statusEl.innerHTML = isThisCorrect 
+        ? '✓ ' + tr.rightAnswer
+        : '✗ ' + tr.notQuite;
+    }
+  });
+  
+  nextBtn.classList.remove('hidden');
+  if (currentQ === quizData.length - 1) nextBtn.textContent = tr.seeResults;
+}
+
+function nextQuestion() {
+  answered = false;
+  currentQ++;
+  if (currentQ >= quizData.length) { showResults(); return; }
+  document.querySelectorAll('.question').forEach((q, i) => q.classList.toggle('active', i === currentQ));
+  updateProgress();
+}
+
+function updateProgress() {
+  document.querySelector('.progress-fill').style.width = (currentQ / quizData.length * 100) + '%';
+}
+
+function showResults() {
+  document.querySelectorAll('.question').forEach(q => q.classList.remove('active'));
+  document.getElementById('results').classList.add('active');
+  const pct = Math.round((correctCount / quizData.length) * 100);
+  document.getElementById('score').textContent = pct + '%';
+  document.getElementById('score-text').textContent = tr.scoreText.replace('{correct}', correctCount).replace('{total}', quizData.length);
+  document.querySelector('.progress-fill').style.width = '100%';
+}
+
+function restart() {
+  currentQ = 0; correctCount = 0; answered = false;
+  document.getElementById('results').classList.remove('active');
+  document.querySelectorAll('.question').forEach((q, i) => {
+    q.classList.toggle('active', i === 0);
+    q.querySelectorAll('.option').forEach(o => o.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'show-correct'));
+    q.querySelectorAll('.option-feedback').forEach(f => {
+      f.classList.add('hidden');
+      f.classList.remove('correct-feedback', 'incorrect-feedback');
+    });
+    const btn = q.querySelector('.next-btn');
+    btn.classList.add('hidden');
+    btn.textContent = tr.next;
+  });
+  updateProgress();
+}
+
+init();
+</script>
+</body>
+</html>
