@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Franklin August Trading — Training Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #c8aa70; --gold-dark: #a07840; --bg: #1a1410; --bg2: #231c14;
+      --surface: rgba(255,255,255,0.04); --border: rgba(255,255,255,0.08);
+      --text: #e8dcc8; --muted: #d4c9b8; --dim: #a89880; --faint: #7a6e60; --vfaint: #3a3228;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 50%, #1e1810 100%);
+      font-family: 'Source Sans 3', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 3rem;
+      color: var(--text);
+    }
+
+    header { text-align: center; margin-bottom: 2rem; }
+    header p { color: var(--faint); font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.4rem; }
+    header h1 { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 400; letter-spacing: 0.06em; }
+
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 680px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 0.65rem 1rem;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      text-align: center;
+    }
+    .tab-btn.active { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #1a1410; }
+    .tab-btn:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.06); }
+
+    .module { display: none; flex-direction: column; align-items: center; width: 100%; }
+    .module.active { display: flex; }
+
+    .progress { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 2rem; }
+    .dot { height: 10px; border-radius: 5px; border: none; cursor: pointer; transition: all 0.35s ease; padding: 0; }
+    .dot.done     { background: var(--gold); opacity: 0.6; width: 10px; }
+    .dot.active   { background: var(--gold); width: 36px; opacity: 1; }
+    .dot.upcoming { background: rgba(255,255,255,0.15); width: 10px; opacity: 0.3; }
+
+    .card { width: 100%; max-width: 680px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    .step-header { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem; }
+    .step-icon  { font-size: 1.6rem; }
+    .step-label { color: var(--faint); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 0.2rem; }
+    .step-title { font-family: 'Cormorant Garamond', serif; font-size: 1.45rem; font-weight: 600; color: var(--text); }
+    .divider    { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin-bottom: 1.5rem; }
+
+    .content p        { font-size: 1.05rem; line-height: 1.85; color: var(--muted); margin-bottom: 1.25rem; }
+    .content p strong { color: var(--text); }
+    .content ul       { color: #c8bca8; line-height: 2.1; padding-left: 1.5rem; margin-bottom: 1.75rem; }
+
+    .path-list  { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.25rem 1.5rem; margin-top: 0.5rem; }
+    .path-label { color: var(--dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.6rem; }
+    .path-item  { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 0; color: #c8bca8; font-size: 0.97rem; }
+    .path-num   { width: 22px; height: 22px; border-radius: 50%; background: rgba(200,170,120,0.18); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: var(--gold); flex-shrink: 0; }
+
+    .audio-wrap { margin: 1.5rem 0 0.5rem; }
+    audio { width: 100%; border-radius: 8px; outline: none; margin-bottom: 1rem; }
+    .speed-label   { color: var(--dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.6rem; }
+    .speed-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .speed-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--dim);
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .speed-btn:hover  { border-color: rgba(200,170,112,0.4); color: var(--gold); }
+    .speed-btn.active { background: rgba(200,170,112,0.15); border-color: rgba(200,170,112,0.4); color: var(--gold); }
+
+    .fc-meta          { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; color: var(--dim); font-size: 0.88rem; }
+    .fc-counter       { color: var(--gold); font-weight: 700; }
+    .fc-scene         { width: 100%; height: 200px; perspective: 1000px; cursor: pointer; margin-bottom: 1.5rem; }
+    .fc-card          { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4,0,0.2,1); border-radius: 12px; }
+    .fc-card.flipped  { transform: rotateY(180deg); }
+    .fc-face          { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; }
+    .fc-front         { background: rgba(200,170,112,0.08); border: 1px solid rgba(200,170,112,0.2); }
+    .fc-back          { background: rgba(200,170,112,0.15); border: 1px solid rgba(200,170,112,0.35); transform: rotateY(180deg); }
+    .fc-hint          { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint); margin-bottom: 0.75rem; }
+    .fc-text          { font-size: 1.05rem; line-height: 1.65; color: var(--text); }
+    .fc-back .fc-text { color: var(--gold); font-weight: 600; }
+    .fc-nav           { display: flex; gap: 0.75rem; justify-content: center; align-items: center; }
+    .fc-btn           { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: #c8bca8; padding: 0.6rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-family: 'Source Sans 3', sans-serif; transition: border-color 0.2s, color 0.2s; }
+    .fc-btn:hover:not(:disabled) { border-color: rgba(255,255,255,0.3); color: var(--text); }
+    .fc-btn:disabled  { opacity: 0.2; cursor: default; }
+    .fc-shuffle       { background: rgba(200,170,112,0.1); border: 1px solid rgba(200,170,112,0.25); color: var(--gold); padding: 0.6rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-family: 'Source Sans 3', sans-serif; transition: background 0.2s; }
+    .fc-shuffle:hover { background: rgba(200,170,112,0.18); }
+    .fc-progress-bar  { width: 100%; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-bottom: 1.25rem; }
+    .fc-progress-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.3s ease; }
+
+    .cta-btn       { display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #1a1410; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.98rem; letter-spacing: 0.02em; box-shadow: 0 4px 20px rgba(200,170,112,0.3); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(200,170,112,0.4); }
+    .cta-note      { margin-top: 1.1rem; color: var(--faint); font-size: 0.85rem; }
+    .quiz-done-btn { margin-top: 1.25rem; background: transparent; border: 1px solid rgba(200,170,112,0.3); color: var(--gold); padding: 0.65rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-family: 'Source Sans 3', sans-serif; transition: background 0.2s; display: block; }
+    .quiz-done-btn:hover { background: rgba(200,170,112,0.1); }
+
+    .complete-wrap        { text-align: center; padding: 0.75rem 0; }
+    .complete-emoji       { font-size: 3.5rem; margin-bottom: 1rem; }
+    .complete-box         { background: rgba(200,170,112,0.08); border: 1px solid rgba(200,170,112,0.18); border-radius: 12px; padding: 1.25rem 1.5rem; display: inline-block; text-align: left; margin-top: 0.5rem; }
+    .complete-box .cb-label { color: var(--gold); font-weight: 700; margin-bottom: 0.5rem; font-size: 0.95rem; }
+    .complete-box ul      { color: #c8bca8; line-height: 2.1; padding-left: 1.25rem; margin: 0; }
+
+    .nav        { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .btn-back   { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: #c8bca8; padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-family: 'Source Sans 3', sans-serif; transition: border-color 0.2s, color 0.2s; }
+    .btn-back:hover:not(:disabled) { border-color: rgba(255,255,255,0.3); color: var(--text); }
+    .btn-back:disabled { opacity: 0.2; cursor: default; }
+    .btn-next   { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); border: none; color: #1a1410; padding: 0.7rem 2rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 700; font-family: 'Source Sans 3', sans-serif; letter-spacing: 0.03em; box-shadow: 0 4px 16px rgba(200,170,112,0.25); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(200,170,112,0.35); }
+
+    footer { color: var(--vfaint); font-size: 0.72rem; margin-top: 2rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+<header>
+  <p>Franklin August Trading</p>
+  <h1>Training Hub</h1>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab1" onclick="switchModule(1)">Module 1 — BioTek Products</button>
+  <button class="tab-btn"        id="tab2" onclick="switchModule(2)">Module 2 — Corrugated Materials</button>
+</div>
+
+<!-- MODULE 1 -->
+<div class="module active" id="module1">
+  <div class="progress" id="progress1"></div>
+  <div class="card">
+    <div class="step-header">
+      <span class="step-icon" id="m1Icon"></span>
+      <div><div class="step-label" id="m1Label"></div><div class="step-title" id="m1Title"></div></div>
+    </div>
+    <hr class="divider" />
+    <div class="content" id="m1Content"></div>
+    <div class="nav">
+      <button class="btn-back" id="m1Back" onclick="m1Navigate(-1)">Back</button>
+      <button class="btn-next" id="m1Next" onclick="m1Navigate(1)">Next Step</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODULE 2 -->
+<div class="module" id="module2">
+  <div class="progress" id="progress2"></div>
+  <div class="card">
+    <div class="step-header">
+      <span class="step-icon" id="m2Icon"></span>
+      <div><div class="step-label" id="m2Label"></div><div class="step-title" id="m2Title"></div></div>
+    </div>
+    <hr class="divider" />
+    <div class="content" id="m2Content"></div>
+    <div class="nav">
+      <button class="btn-back" id="m2Back" onclick="m2Navigate(-1)">Back</button>
+      <button class="btn-next" id="m2Next" onclick="m2Navigate(1)">Next Step</button>
+    </div>
+  </div>
+</div>
+
+<footer>Franklin August Trading &nbsp;&middot;&nbsp; Internal Use Only</footer>
+
+<script>
+/* ── Tab switcher ── */
+function switchModule(n) {
+  document.getElementById('module1').classList.toggle('active', n === 1);
+  document.getElementById('module2').classList.toggle('active', n === 2);
+  document.getElementById('tab1').classList.toggle('active', n === 1);
+  document.getElementById('tab2').classList.toggle('active', n === 2);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Shared helpers ── */
+function shuffle(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+function buildDots(current, total, prefix) {
+  var out = '';
+  for (var i = 0; i < total; i++) {
+    var cls = i < current ? 'done' : i === current ? 'active' : 'upcoming';
+    out += '<button class="dot ' + cls + '" onclick="' + prefix + 'GoTo(' + i + ')" title="Step ' + (i+1) + '"></button>';
+  }
+  return out;
+}
+
+/* ════════════════════════════════════
+   MODULE 1 — BIOTEK
+════════════════════════════════════ */
+var M1_AUDIO = 'BioTek_Assembly_Numbers_and_Batch_Scheduling.m4a';
+var M1_QUIZ  = 'assembly-quiz-interactive.html';
+
+var M1_CARDS = [
+  {q:"What standard prefix is used for all finished assembly numbers at Franklin August Trading?",a:"Every finished assembly number begins with the prefix 90-."},
+  {q:"What does the 90- prefix signify in the BioTek packaging assembly system?",a:"It identifies the item as a finished packaging assembly ready to ship."},
+  {q:"How many digits follow the 90- prefix to identify a specific product?",a:"The prefix is followed by a specific seven-digit identification number."},
+  {q:"What was the total production volume for all top 20 BioTek sets in 2025?",a:"The total production volume reached 8,849 sets."},
+  {q:"Why is production at Franklin August Trading described as having peaks and valleys?",a:"Products are manufactured in batches based on demand rather than a steady monthly schedule."},
+  {q:"Which product is ranked number one by production volume in the 2025 guide?",a:"The H1 Main is the top-ranked product by volume."},
+  {q:"What is the assembly number for the H1 Main?",a:"The assembly number is 90-8043033."},
+  {q:"How many sets of the H1 Main were produced annually in 2025?",a:"There were 1,059 sets of the H1 Main produced."},
+  {q:"What is the typical batch size for an H1 Main production run?",a:"The H1 Main is typically produced in batches of 40 to 50 sets."},
+  {q:"Which product holds the number two spot for annual production volume?",a:"The Epoch 2 is the second highest volume product."},
+  {q:"What is the assembly number for the Epoch 2?",a:"The assembly number is 90-1333003."},
+  {q:"What was the total annual volume for the Epoch 2 in 2025?",a:"The Epoch 2 had an annual volume of 822 sets."},
+  {q:"What type of outer box construction is used for the Epoch 2?",a:"It uses a single-wall high-performance outer box."},
+  {q:"Which packaging set is ranked third in production volume?",a:"The Take 3 Set is the third highest volume product."},
+  {q:"What is the assembly number for the Take 3 Set?",a:"The assembly number is 90-4693003."},
+  {q:"What was the 2025 annual volume for the Take 3 Set?",a:"The Take 3 Set had an annual volume of 793 sets."},
+  {q:"How frequently is the Take 3 Set produced during the year?",a:"It is produced in large batches only 2 to 4 times per year."},
+  {q:"What is the typical batch size for a Take 3 Set production run?",a:"Batch sizes for this set range from 150 to 250 units."},
+  {q:"Which product is ranked fourth in volume for 2025?",a:"The Washer Accessory is the fourth highest volume product."},
+  {q:"What is the assembly number for the Washer Accessory?",a:"The assembly number is 90-7103013."},
+  {q:"How many sets of the Washer Accessory were produced in 2025?",a:"There were 767 sets produced annually."},
+  {q:"Which BioTek instrument is the Washer Accessory designed for?",a:"It packages accessories for the ELx405 microplate washer."},
+  {q:"What is the assembly number for the 405 Touch Screen?",a:"The assembly number is 90-1173009."},
+  {q:"What was the 2025 annual production volume for the 405 Touch Screen?",a:"The annual production volume was 692 sets."},
+  {q:"What type of outer box is used for the 405 Touch Screen?",a:"It uses a large double-wall outer box."},
+  {q:"Collectively, how many sets do the top five products account for?",a:"The top five products account for over 4,000 sets."},
+  {q:"What is the assembly number for the 800 Touch Screen?",a:"The assembly number is 90-1563000."},
+  {q:"How many sets of the 800 Touch Screen were produced in 2025?",a:"There were 608 sets produced annually."},
+  {q:"What specific feature is the 800 Touch Screen packaging built around?",a:"It is built around a precision foam system."},
+  {q:"What is the assembly number for the 50 Touch Screen?",a:"The assembly number is 90-1553004."},
+  {q:"What was the 2025 annual volume for the 50 Touch Screen?",a:"The annual volume was 520 sets."},
+  {q:"What is the assembly number for the Touch Screen Valve?",a:"The assembly number is 90-1173008."},
+  {q:"How many sets of the Touch Screen Valve were produced in 2025?",a:"There were 446 sets produced annually."},
+  {q:"What is the assembly number for the Synergy packaging set?",a:"The assembly number is 90-7093001."},
+  {q:"What was the annual production volume for the Synergy set in 2025?",a:"The annual production volume was 361 sets."},
+  {q:"What instrument does the Synergy packaging set ship?",a:"It ships the BioTek Synergy multimode microplate reader."},
+  {q:"What is the assembly number for the Cytation Main?",a:"The assembly number is 90-1223018."},
+  {q:"How many sets of the Cytation Main were produced in 2025?",a:"There were 312 sets produced annually."},
+  {q:"Which product is described as one of the most complex assemblies due to nested components?",a:"The Cytation Main is described as one of the most complex builds."},
+  {q:"What instrument is shipped using the Cytation Main assembly?",a:"It ships the BioTek Cytation cell imaging reader."},
+  {q:"What is the assembly number for the Cytation Accessory?",a:"The assembly number is 90-1223020."},
+  {q:"How many sets of the Cytation Accessory were produced in 2025?",a:"There were 282 sets produced annually."},
+  {q:"What is the assembly number for the Biostacker 3?",a:"The assembly number is 90-1163003."},
+  {q:"What was the annual volume for the Biostacker 3 in 2025?",a:"The annual volume was 257 sets."},
+  {q:"What instrument is the Biostacker 3 packaging designed for?",a:"It ships the BioTek BioStack microplate stacker."},
+  {q:"What is the assembly number for the Gas Controller?",a:"The assembly number is 90-1213025."},
+  {q:"What was the 2025 annual volume for the Gas Controller?",a:"The annual volume was 249 sets."},
+  {q:"What internal system is used within the Gas Controller outer box?",a:"It utilizes a sleeve system inside the box."},
+  {q:"What is the assembly number for the standard Epoch set?",a:"The assembly number is 90-7203006."},
+  {q:"How many sets of the standard Epoch were produced in 2025?",a:"There were 239 sets produced annually."},
+  {q:"What is the assembly number for the H1 Dispenser?",a:"The assembly number is 90-8043032."},
+  {q:"How many H1 Dispenser sets were produced in 2025?",a:"There were 217 sets produced annually."},
+  {q:"The H1 Dispenser assembly is typically paired with which main unit?",a:"It is paired with the H1 Main (90-8043033)."},
+  {q:"What is the assembly number for the 405 Q?",a:"The assembly number is 90-1173032."},
+  {q:"How many 405 Q sets were produced in 2025?",a:"There were 175 sets produced annually."},
+  {q:"What is the assembly number for the Immucor Accessory?",a:"The assembly number is 90-8063020."},
+  {q:"What was the annual volume for the Immucor Accessory in 2025?",a:"The annual volume was 144 sets."},
+  {q:"What design is used for the Immucor Accessory packaging?",a:"It uses a sleeve-in-box design."},
+  {q:"What is the assembly number for the Immucor main unit?",a:"The assembly number is 90-8063024."},
+  {q:"How many Immucor main unit sets were produced in 2025?",a:"There were 142 sets produced annually."},
+  {q:"What unique base component is included in the Immucor main assembly?",a:"It includes a plywood base panel."},
+  {q:"What is the assembly number for the MFXPW Main?",a:"The assembly number is 90-1263002."},
+  {q:"How many MFXPW Main sets were produced in 2025?",a:"There were 133 sets produced annually."},
+  {q:"What instrument is shipped in the MFXPW Main assembly?",a:"It ships the BioTek MultiFlo FX multimode dispenser."},
+  {q:"What is the assembly number for the Biostacker Accessory?",a:"The assembly number is 90-7313001."},
+  {q:"How many Biostacker Accessory sets were produced in 2025?",a:"There were 131 sets produced annually."},
+  {q:"Which item is described as the lowest-cost and simplest item in the top 20?",a:"The Biostacker Accessory is the simplest and lowest-cost item."},
+  {q:"The Biostacker Accessory is associated with which main assembly?",a:"It is associated with the Biostacker 3 (90-1163003)."},
+  {q:"How do the assembly numbers for the Epoch and Epoch 2 differ?",a:"The Epoch is 90-7203006, while the Epoch 2 is 90-1333003."}
+];
+
+var m1Current = 0;
+var m1Deck = M1_CARDS.slice();
+var m1Index = 0;
+var m1Flipped = false;
+
+var m1Steps = [
+  { icon:"👋", label:"Step 1 of 5", title:"Welcome to Franklin August Trading", type:"welcome" },
+  { icon:"🎧", label:"Step 2 of 5", title:"Listen to the Training Audio",       type:"audio" },
+  { icon:"🃏", label:"Step 3 of 5", title:"Review the Flashcards",              type:"flashcards" },
+  { icon:"📝", label:"Step 4 of 5", title:"Take the Quiz",                      type:"quiz" },
+  { icon:"✅", label:"Step 5 of 5", title:"Training Complete",                  type:"complete" }
+];
+
+function m1BuildWelcome() {
+  var paths = ["Welcome","Listen to the Audio","Review Flashcards","Take the Quiz","You're Done"];
+  var items = '';
+  for (var i = 0; i < paths.length; i++) {
+    items += '<div class="path-item"><span class="path-num">' + (i+1) + '</span><span>' + paths[i] + '</span></div>';
+  }
+  return '<p>You\'re about to go through your first product training module. This walkthrough covers the <strong>top 20 BioTek Instrument sets</strong> that we manufacture here at Franklin August — the products you\'ll be working with most on the floor.</p>' +
+    '<p>By the end of this training you should be able to recognize product names, recall assembly numbers, and understand the basics of how each set is built.</p>' +
+    '<div class="path-list"><div class="path-label">Your training path</div>' + items + '</div>';
+}
+
+function m1BuildAudio() {
+  return '<p>This audio is a conversation between two Franklin August employees discussing all 20 BioTek sets — their names, assembly numbers, materials, and how they\'re built.</p>' +
+    '<p><strong>Listen through the full audio before moving on.</strong> Don\'t worry about memorizing everything on the first pass — the flashcards and quiz will reinforce it.</p>' +
+    '<div class="audio-wrap">' +
+    '<audio id="m1Audio" controls><source src="' + M1_AUDIO + '" type="audio/mp4">Your browser does not support the audio element.</audio>' +
+    '<div class="speed-label">Playback Speed</div>' +
+    '<div class="speed-buttons">' +
+    '<button class="speed-btn" onclick="m1SetSpeed(0.75)">0.75x</button>' +
+    '<button class="speed-btn active" onclick="m1SetSpeed(1)">1x</button>' +
+    '<button class="speed-btn" onclick="m1SetSpeed(1.25)">1.25x</button>' +
+    '<button class="speed-btn" onclick="m1SetSpeed(1.5)">1.5x</button>' +
+    '<button class="speed-btn" onclick="m1SetSpeed(2)">2x</button>' +
+    '</div></div>';
+}
+
+function m1SetSpeed(s) {
+  var a = document.getElementById('m1Audio');
+  if (a) a.playbackRate = s;
+  var btns = document.querySelectorAll('#module1 .speed-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', parseFloat(btns[i].textContent) === s);
+  }
+}
+
+function m1BuildFlashcards() {
+  return '<p>Work through the flashcards below to reinforce what you heard in the audio. Click any card to reveal the answer.</p>' +
+    '<div class="fc-progress-bar"><div class="fc-progress-fill" id="m1Fill"></div></div>' +
+    '<div class="fc-meta"><span>Click card to flip</span><span class="fc-counter" id="m1Counter"></span></div>' +
+    '<div class="fc-scene" onclick="m1Flip()"><div class="fc-card" id="m1Card">' +
+    '<div class="fc-face fc-front"><div class="fc-hint">Question</div><div class="fc-text" id="m1Q"></div></div>' +
+    '<div class="fc-face fc-back"><div class="fc-hint">Answer</div><div class="fc-text" id="m1A"></div></div>' +
+    '</div></div>' +
+    '<div class="fc-nav">' +
+    '<button class="fc-btn" id="m1Prev" onclick="m1FCNav(-1)">Prev</button>' +
+    '<button class="fc-shuffle" onclick="m1Shuffle()">Shuffle</button>' +
+    '<button class="fc-btn" id="m1Next2" onclick="m1FCNav(1)">Next</button>' +
+    '</div>';
+}
+
+function m1RenderFC() {
+  var c = m1Deck[m1Index];
+  document.getElementById('m1Q').textContent = c.q;
+  document.getElementById('m1A').textContent = c.a;
+  document.getElementById('m1Counter').textContent = (m1Index + 1) + ' / ' + m1Deck.length;
+  document.getElementById('m1Fill').style.width = ((m1Index + 1) / m1Deck.length * 100) + '%';
+  document.getElementById('m1Prev').disabled = m1Index === 0;
+  document.getElementById('m1Next2').disabled = m1Index === m1Deck.length - 1;
+  m1Flipped = false;
+  document.getElementById('m1Card').classList.remove('flipped');
+}
+
+function m1Flip()    { m1Flipped = !m1Flipped; document.getElementById('m1Card').classList.toggle('flipped', m1Flipped); }
+function m1FCNav(d)  { var n = m1Index + d; if (n >= 0 && n < m1Deck.length) { m1Index = n; m1RenderFC(); } }
+function m1Shuffle() { shuffle(m1Deck); m1Index = 0; m1RenderFC(); }
+
+function m1BuildQuiz() {
+  return '<p>Time to test what you\'ve learned. The quiz covers the same material from the audio and flashcards.</p>' +
+    '<p>Don\'t stress if you don\'t ace it on the first try — the goal is to identify what you need to review, not to be perfect on day one.</p>' +
+    '<a class="cta-btn" href="' + M1_QUIZ + '" target="_blank" rel="noreferrer">Take the Quiz</a>' +
+    '<p class="cta-note">Opens in a new tab. Return here once you\'ve completed it.</p>' +
+    '<button class="quiz-done-btn" onclick="m1GoTo(4)">I\'ve Finished the Quiz ✓</button>';
+}
+
+function m1BuildComplete() {
+  return '<div class="complete-wrap">' +
+    '<div class="complete-emoji">🎉</div>' +
+    '<p>You\'ve completed the BioTek Product Training module.</p>' +
+    '<p style="color:var(--dim);margin-bottom:1.5rem;">Let your supervisor know you\'ve finished. Don\'t hesitate to revisit the audio or flashcards anytime you need a refresher.</p>' +
+    '<div class="complete-box"><div class="cb-label">What you covered:</div><ul>' +
+    '<li>Top 20 BioTek Instrument sets by production volume</li>' +
+    '<li>Assembly numbers and the 90- prefix system</li>' +
+    '<li>Key materials, foam types, and box grades</li>' +
+    '<li>Basic construction and assembly process overview</li>' +
+    '</ul></div></div>';
+}
+
+function m1Render() {
+  var s = m1Steps[m1Current];
+  document.getElementById('m1Icon').textContent  = s.icon;
+  document.getElementById('m1Label').textContent = s.label;
+  document.getElementById('m1Title').textContent = s.title;
+  var html = '';
+  if (s.type === 'welcome')    html = m1BuildWelcome();
+  if (s.type === 'audio')      html = m1BuildAudio();
+  if (s.type === 'flashcards') html = m1BuildFlashcards();
+  if (s.type === 'quiz')       html = m1BuildQuiz();
+  if (s.type === 'complete')   html = m1BuildComplete();
+  document.getElementById('m1Content').innerHTML = html;
+  if (s.type === 'flashcards') { m1Deck = M1_CARDS.slice(); m1Index = 0; m1RenderFC(); }
+  document.getElementById('progress1').innerHTML = buildDots(m1Current, m1Steps.length, 'm1');
+  document.getElementById('m1Back').disabled = m1Current === 0;
+  document.getElementById('m1Next').style.display = m1Current === m1Steps.length - 1 ? 'none' : 'inline-block';
+}
+
+function m1Navigate(d) { var n = m1Current + d; if (n >= 0 && n < m1Steps.length) { m1Current = n; m1Render(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function m1GoTo(i)     { m1Current = i; m1Render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ════════════════════════════════════
+   MODULE 2 — CORRUGATED
+════════════════════════════════════ */
+var M2_AUDIO = 'The_Hidden_Engineering_of_Shipping_Boxes.m4a';
+var M2_QUIZ  = 'corrugated-quiz-interactive.html';
+
+var M2_CARDS = [
+  {q:"What is the primary physical difference between cardboard and corrugated material?",a:"Cardboard is a single thick sheet of paper, while corrugated is a multi-layered sandwich structure."},
+  {q:"What are the three layers that compose a standard single-wall corrugated sheet?",a:"An outer liner, an inner liner, and a wavy middle layer called fluting or medium."},
+  {q:"What is the specific name for the wavy, rippled layer in corrugated board?",a:"Fluting (or medium)."},
+  {q:"Which geometric form makes corrugated fluting an effective structural engineering component?",a:"The arch."},
+  {q:"How do the small arches in corrugated fluting protect the contents of a box?",a:"They distribute loads across the whole structure instead of concentrating force at one point."},
+  {q:"What visual or tactile characteristic identifies the outer layer of a corrugated box?",a:"It is usually completely smooth."},
+  {q:"What visual or tactile characteristic identifies the inner layer of a corrugated box?",a:"It has a slight texture that reveals the attached fluted layer."},
+  {q:"Why is corrugated considered the best material for shipping sensitive scientific equipment?",a:"It provides protection from impact, compression, and vibration during transit."},
+  {q:"What are the three secondary benefits of corrugated packaging mentioned in the training?",a:"It is lightweight, cost-effective, and recyclable."},
+  {q:"How are corrugated flute types categorized for identification?",a:"They are categorized by letters, such as A, B, C, E, and F."},
+  {q:"What two physical characteristics does a flute's letter designation indicate?",a:"The height and density of the wave."},
+  {q:"What was the historical basis for assigning letters to flute types?",a:"The order in which the flute types were developed."},
+  {q:"What is the approximate height of an A flute?",a:"1/4 inch."},
+  {q:"Which flute type provides the best cushioning and stacking strength due to having the tallest waves?",a:"A flute."},
+  {q:"What is the approximate height of a B flute?",a:"1/8 inch."},
+  {q:"What is the primary structural advantage of B flute's higher flute density?",a:"It provides excellent resistance to crushing from the side."},
+  {q:"Which flute type is the most widely used in the corrugated industry?",a:"C flute."},
+  {q:"What makes C flute the standard choice for general shipping boxes?",a:"It provides a balance of cushioning, stacking strength, and printability."},
+  {q:"What is the approximate height of an E flute?",a:"1/16 inch."},
+  {q:"In what specific application are E and F flutes most commonly used?",a:"Retail packaging and small product boxes requiring smooth printing surfaces."},
+  {q:"Which flute types are primarily used for single-wall construction at Franklin August?",a:"B and C flutes."},
+  {q:"How many total layers are found in a single-wall corrugated box?",a:"Three layers."},
+  {q:"How many total layers are found in a double-wall corrugated box?",a:"Five layers."},
+  {q:"What component separates the two layers of fluting in double-wall construction?",a:"A middle liner."},
+  {q:"What is the structural advantage of double-wall construction over single-wall?",a:"It is significantly stronger and heavier for handling higher compression loads."},
+  {q:"Which wall construction is typically used for Epoch 2 and Gas Controller sets?",a:"Single-wall."},
+  {q:"Which wall construction is preferred for heavier units like the Synergy or Cytation?",a:"Double-wall."},
+  {q:"In packaging design, what is the negative result of 'over-speccing' a box?",a:"It adds unnecessary cost and weight without adding value."},
+  {q:"In packaging design, what is the risk of 'under-speccing' a box?",a:"It increases the risk of product damage."},
+  {q:"What does the acronym ECT stand for in the corrugated industry?",a:"Edge Crush Test."},
+  {q:"What physical property does the Edge Crush Test (ECT) measure?",a:"How much vertical compression force the board can handle before collapsing."},
+  {q:"In what unit of measurement is an ECT rating expressed?",a:"Pounds per lineal inch."},
+  {q:"What does the Mullen Burst test specifically measure?",a:"The amount of pressure required to puncture through the face of the board."},
+  {q:"In what unit of measurement is a Mullen Burst rating expressed?",a:"Pounds per square inch."},
+  {q:"What does the 'C' identify in a board grade labeled as '200C'?",a:"Single-wall C flute board."},
+  {q:"Which two designations are used interchangeably for the standard single-wall workhorse grade?",a:"32 ECT and 200C."},
+  {q:"What is the maximum carton weight capacity for 32 ECT (200C) board?",a:"65 pounds."},
+  {q:"What is the maximum carton weight capacity for 44 ECT (275C) single-wall board?",a:"95 pounds."},
+  {q:"What is the standard ECT rating for double-wall board used at Franklin August?",a:"48 ECT."},
+  {q:"Which combination of flute types is found in a 350BC double-wall board?",a:"B flute and C flute."},
+  {q:"What is the maximum carton weight capacity for 48 ECT double-wall board?",a:"100 pounds."},
+  {q:"What type of material is V3C?",a:"High-performance single-wall corrugated board."},
+  {q:"What does the 'V' stand for in the material V3C?",a:"A proprietary linerboard grade."},
+  {q:"Why is V3C used instead of standard C flute in technical applications?",a:"It provides better stacking strength while maintaining a single-wall profile."},
+  {q:"What is a common misconception about the material V3C?",a:"That it is triple-wall board."},
+  {q:"Why is ECT more relevant than the Mullen Burst test for modern palletized shipping?",a:"Modern shipping involves stacking boxes, and ECT measures the vertical compression those stacks create."},
+  {q:"What was the primary concern the Mullen Burst test was originally designed to address?",a:"Puncture resistance from individual handling and impact."},
+  {q:"In which direction should flutes be oriented to maximize the stacking strength of a box?",a:"Vertically (top to bottom)."},
+  {q:"How does rotating a box 90 degrees onto its side affect its strength?",a:"The stacking strength drops significantly because the load is perpendicular to the arches."},
+  {q:"What environmental factor significantly weakens corrugated board by affecting its paper base?",a:"Moisture or humidity."},
+  {q:"Which Bill of Materials (BOM) prefix identifies a printed corrugated box?",a:"49-."},
+  {q:"What is the standard sequence for writing box dimensions?",a:"Length by Width by Depth (L x W x D)."},
+  {q:"Are the dimensions listed on a box spec interior or exterior measurements?",a:"Interior dimensions."},
+  {q:"How is the 'Length' of a box defined in a dimension sequence?",a:"The longest opening dimension."},
+  {q:"How is the 'Width' of a box defined in a dimension sequence?",a:"The shorter opening dimension."},
+  {q:"In a Franklin August part number, how are dimensions that include fractions represented?",a:"Only the whole number is used (the fraction is truncated)."},
+  {q:"If a box dimension is 10.5 inches, what number would appear in the part number?",a:"10."},
+  {q:"Typically, how much larger are the exterior dimensions of a box compared to the interior dimensions?",a:"1/4 to 1/2 inch."},
+  {q:"In a Franklin August corrugated part number, what does the first number indicate?",a:"The direction of the flutes."},
+  {q:"What does the acronym RSC stand for?",a:"Regular Slotted Container."},
+  {q:"What is the characteristic closing mechanism of an RSC style box?",a:"Four flaps on the top and bottom that fold together."},
+  {q:"What is the purpose of understanding the reasoning behind box specifications?",a:"To work confidently and identify potential problems when materials do not look right."}
+];
+
+var m2Current = 0;
+var m2Deck = M2_CARDS.slice();
+var m2Index = 0;
+var m2Flipped = false;
+
+var m2Steps = [
+  { icon:"👋", label:"Step 1 of 5", title:"Welcome to Module 2",          type:"welcome" },
+  { icon:"🎧", label:"Step 2 of 5", title:"Listen to the Training Audio", type:"audio" },
+  { icon:"🃏", label:"Step 3 of 5", title:"Review the Flashcards",        type:"flashcards" },
+  { icon:"📝", label:"Step 4 of 5", title:"Take the Quiz",                type:"quiz" },
+  { icon:"✅", label:"Step 5 of 5", title:"Training Complete",            type:"complete" }
+];
+
+function m2BuildWelcome() {
+  var paths = ["Welcome","Listen to the Audio","Review Flashcards","Take the Quiz","You're Done"];
+  var items = '';
+  for (var i = 0; i < paths.length; i++) {
+    items += '<div class="path-item"><span class="path-num">' + (i+1) + '</span><span>' + paths[i] + '</span></div>';
+  }
+  return '<p>This module covers <strong>corrugated materials</strong> — what they are, how they\'re engineered, and how we spec them at Franklin August. You\'ll learn to read board grades, identify flute types, and understand why the right box matters.</p>' +
+    '<p>By the end of this training you should be able to identify corrugated construction types, read board grade designations, and understand the specs behind the boxes you\'ll be handling.</p>' +
+    '<div class="path-list"><div class="path-label">Your training path</div>' + items + '</div>';
+}
+
+function m2BuildAudio() {
+  return '<p>This audio walks you through the hidden engineering behind corrugated boxes — why they work, how they\'re rated, and what to look for on the shop floor.</p>' +
+    '<p><strong>Listen through the full audio before moving on.</strong> The flashcards and quiz will reinforce the key concepts.</p>' +
+    '<div class="audio-wrap">' +
+    '<audio id="m2Audio" controls><source src="' + M2_AUDIO + '" type="audio/mp4">Your browser does not support the audio element.</audio>' +
+    '<div class="speed-label">Playback Speed</div>' +
+    '<div class="speed-buttons">' +
+    '<button class="speed-btn" onclick="m2SetSpeed(0.75)">0.75x</button>' +
+    '<button class="speed-btn active" onclick="m2SetSpeed(1)">1x</button>' +
+    '<button class="speed-btn" onclick="m2SetSpeed(1.25)">1.25x</button>' +
+    '<button class="speed-btn" onclick="m2SetSpeed(1.5)">1.5x</button>' +
+    '<button class="speed-btn" onclick="m2SetSpeed(2)">2x</button>' +
+    '</div></div>';
+}
+
+function m2SetSpeed(s) {
+  var a = document.getElementById('m2Audio');
+  if (a) a.playbackRate = s;
+  var btns = document.querySelectorAll('#module2 .speed-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', parseFloat(btns[i].textContent) === s);
+  }
+}
+
+function m2BuildFlashcards() {
+  return '<p>Work through the flashcards below to reinforce what you heard in the audio. Click any card to reveal the answer.</p>' +
+    '<div class="fc-progress-bar"><div class="fc-progress-fill" id="m2Fill"></div></div>' +
+    '<div class="fc-meta"><span>Click card to flip</span><span class="fc-counter" id="m2Counter"></span></div>' +
+    '<div class="fc-scene" onclick="m2Flip()"><div class="fc-card" id="m2Card">' +
+    '<div class="fc-face fc-front"><div class="fc-hint">Question</div><div class="fc-text" id="m2Q"></div></div>' +
+    '<div class="fc-face fc-back"><div class="fc-hint">Answer</div><div class="fc-text" id="m2A"></div></div>' +
+    '</div></div>' +
+    '<div class="fc-nav">' +
+    '<button class="fc-btn" id="m2Prev" onclick="m2FCNav(-1)">Prev</button>' +
+    '<button class="fc-shuffle" onclick="m2Shuffle()">Shuffle</button>' +
+    '<button class="fc-btn" id="m2Next2" onclick="m2FCNav(1)">Next</button>' +
+    '</div>';
+}
+
+function m2RenderFC() {
+  var c = m2Deck[m2Index];
+  document.getElementById('m2Q').textContent = c.q;
+  document.getElementById('m2A').textContent = c.a;
+  document.getElementById('m2Counter').textContent = (m2Index + 1) + ' / ' + m2Deck.length;
+  document.getElementById('m2Fill').style.width = ((m2Index + 1) / m2Deck.length * 100) + '%';
+  document.getElementById('m2Prev').disabled = m2Index === 0;
+  document.getElementById('m2Next2').disabled = m2Index === m2Deck.length - 1;
+  m2Flipped = false;
+  document.getElementById('m2Card').classList.remove('flipped');
+}
+
+function m2Flip()    { m2Flipped = !m2Flipped; document.getElementById('m2Card').classList.toggle('flipped', m2Flipped); }
+function m2FCNav(d)  { var n = m2Index + d; if (n >= 0 && n < m2Deck.length) { m2Index = n; m2RenderFC(); } }
+function m2Shuffle() { shuffle(m2Deck); m2Index = 0; m2RenderFC(); }
+
+function m2BuildQuiz() {
+  return '<p>Time to test what you\'ve learned. The quiz covers the same material from the audio and flashcards.</p>' +
+    '<p>Don\'t stress if you don\'t ace it on the first try — the goal is to identify what you need to review, not to be perfect on day one.</p>' +
+    '<a class="cta-btn" href="' + M2_QUIZ + '" target="_blank" rel="noreferrer">Take the Quiz</a>' +
+    '<p class="cta-note">Opens in a new tab. Return here once you\'ve completed it.</p>' +
+    '<button class="quiz-done-btn" onclick="m2GoTo(4)">I\'ve Finished the Quiz ✓</button>';
+}
+
+function m2BuildComplete() {
+  return '<div class="complete-wrap">' +
+    '<div class="complete-emoji">🎉</div>' +
+    '<p>You\'ve completed the Corrugated Materials Training module.</p>' +
+    '<p style="color:var(--dim);margin-bottom:1.5rem;">Let your supervisor know you\'ve finished. Revisit the audio or flashcards any time you need a refresher.</p>' +
+    '<div class="complete-box"><div class="cb-label">What you covered:</div><ul>' +
+    '<li>Corrugated construction — liners, fluting, and wall types</li>' +
+    '<li>Flute grades: A, B, C, E, and F and when each is used</li>' +
+    '<li>ECT ratings, Mullen Burst, and board grade designations</li>' +
+    '<li>How to read a Franklin August box spec or BOM</li>' +
+    '</ul></div></div>';
+}
+
+function m2Render() {
+  var s = m2Steps[m2Current];
+  document.getElementById('m2Icon').textContent  = s.icon;
+  document.getElementById('m2Label').textContent = s.label;
+  document.getElementById('m2Title').textContent = s.title;
+  var html = '';
+  if (s.type === 'welcome')    html = m2BuildWelcome();
+  if (s.type === 'audio')      html = m2BuildAudio();
+  if (s.type === 'flashcards') html = m2BuildFlashcards();
+  if (s.type === 'quiz')       html = m2BuildQuiz();
+  if (s.type === 'complete')   html = m2BuildComplete();
+  document.getElementById('m2Content').innerHTML = html;
+  if (s.type === 'flashcards') { m2Deck = M2_CARDS.slice(); m2Index = 0; m2RenderFC(); }
+  document.getElementById('progress2').innerHTML = buildDots(m2Current, m2Steps.length, 'm2');
+  document.getElementById('m2Back').disabled = m2Current === 0;
+  document.getElementById('m2Next').style.display = m2Current === m2Steps.length - 1 ? 'none' : 'inline-block';
+}
+
+function m2Navigate(d) { var n = m2Current + d; if (n >= 0 && n < m2Steps.length) { m2Current = n; m2Render(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function m2GoTo(i)     { m2Current = i; m2Render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ── Init ── */
+m1Render();
+m2Render();
+</script>
+</body>
+</html>
