@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corrugated Quiz</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh; padding: 20px; color: #333;
+}
+.container { max-width: 700px; margin: 0 auto; }
+.header { text-align: center; color: #fff; padding: 30px 20px; }
+.header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+.header .meta { font-size: 14px; opacity: 0.9; }
+.progress-bar { background: rgba(255,255,255,0.3); border-radius: 10px; height: 8px; margin: 20px 0; overflow: hidden; }
+.progress-fill { background: #fff; height: 100%; width: 0%; transition: width 0.4s ease; border-radius: 10px; }
+.question { background: #fff; border-radius: 16px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; }
+.question.active { display: block; }
+.q-header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; color: #888; }
+.q-number { font-weight: 600; color: #667eea; }
+.q-text { font-size: 18px; font-weight: 600; line-height: 1.5; margin-bottom: 25px; color: #222; }
+.options { display: flex; flex-direction: column; gap: 12px; }
+.option-wrapper { display: flex; flex-direction: column; }
+.option {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px;
+  border: 2px solid #e8e8e8; border-radius: 12px; background: #fafafa;
+  cursor: pointer; transition: all 0.2s; text-align: left; font-size: 15px; width: 100%;
+}
+[dir="rtl"] .option { text-align: right; flex-direction: row-reverse; }
+.option:hover:not(.disabled) { border-color: #667eea; background: #f5f3ff; }
+.option.selected { border-color: #667eea; background: #ede9fe; }
+.option.correct { border-color: #22c55e; background: #dcfce7; }
+.option.incorrect { border-color: #ef4444; background: #fee2e2; }
+.option.disabled { cursor: default; }
+.option.show-correct { border-color: #22c55e; background: #dcfce7; }
+.opt-label {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%; background: #e8e8e8;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.option.selected .opt-label { background: #667eea; color: #fff; }
+.option.correct .opt-label { background: #22c55e; color: #fff; }
+.option.incorrect .opt-label { background: #ef4444; color: #fff; }
+.option.show-correct .opt-label { background: #22c55e; color: #fff; }
+.opt-text { padding-top: 5px; line-height: 1.5; }
+
+/* Individual option feedback */
+.option-feedback {
+  margin: 8px 0 4px 46px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+[dir="rtl"] .option-feedback { margin-left: 0; margin-right: 46px; }
+.option-feedback.correct-feedback {
+  background: #dcfce7;
+  border-left: 3px solid #22c55e;
+}
+.option-feedback.incorrect-feedback {
+  background: #fef3f2;
+  border-left: 3px solid #fca5a5;
+}
+[dir="rtl"] .option-feedback.correct-feedback,
+[dir="rtl"] .option-feedback.incorrect-feedback {
+  border-left: none;
+  border-right: 3px solid;
+}
+[dir="rtl"] .option-feedback.correct-feedback { border-right-color: #22c55e; }
+[dir="rtl"] .option-feedback.incorrect-feedback { border-right-color: #fca5a5; }
+.feedback-status {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.feedback-status.correct { color: #166534; }
+.feedback-status.incorrect { color: #991b1b; }
+.feedback-rationale { color: #444; }
+
+/* Hint box */
+.hint-box {
+  margin: 12px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+.hint-toggle {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hint-toggle:hover { background: #fef3c7; }
+.hint-content {
+  padding: 0 16px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s, padding 0.3s;
+  font-size: 14px;
+  color: #78350f;
+  line-height: 1.5;
+}
+.hint-box.show .hint-content {
+  padding: 0 16px 12px;
+  max-height: 200px;
+}
+
+.next-btn {
+  margin-top: 20px; width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none;
+  border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.next-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+.hidden { display: none !important; }
+.results { background: #fff; border-radius: 16px; padding: 40px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: none; }
+.results.active { display: block; }
+.results h2 { font-size: 28px; margin-bottom: 10px; color: #333; }
+.results .score { font-size: 64px; font-weight: 700; color: #667eea; margin: 20px 0; }
+.results .score-text { font-size: 18px; color: #666; margin-bottom: 30px; }
+.restart-btn {
+  padding: 14px 40px; background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+
+/* Math CSS */
+.math, .math-block { font-family: "Cambria Math", "Times New Roman", Times, serif; font-style: italic; }
+.math-block { display: block; text-align: center; margin: 10px 0; font-size: 110%; }
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 3px; font-size: 0.9em; }
+.frac-num { border-bottom: 1px solid currentColor; padding: 0 4px 2px; line-height: 1.2; }
+.frac-den { padding: 2px 4px 0; line-height: 1.2; }
+.sqrt { white-space: nowrap; }
+.sqrt-content { border-top: 1px solid currentColor; padding: 0 3px; margin-left: 2px; }
+sup, sub { font-size: 0.75em; }
+sup { vertical-align: super; }
+sub { vertical-align: sub; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Corrugated Quiz</h1>
+    <div class="meta">12 questions</div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+  <div id="quiz-container">
+        <div class="question" data-index="0">
+          <div class="q-header">
+            <span class="q-number">Question 1</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">What is the primary structural difference between cardboard and corrugated material?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="Corrugated material is engineered with an inner liner, outer liner, and a wavy layer in between, unlike the solid single layer of cardboard.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">Cardboard consists of a single thick sheet of paper, while corrugated uses a sandwich structure with a fluted medium.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Corrugated material is engineered with an inner liner, outer liner, and a wavy layer in between, unlike the solid single layer of cardboard.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="Both materials are typically paper-based; the difference lies in their geometric construction rather than their base material.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">Corrugated is made from recycled plastic, whereas cardboard is made strictly from wood pulp.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Both materials are typically paper-based; the difference lies in their geometric construction rather than their base material.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="This reverses the definitions; the 'wavy' or fluted layer is the defining characteristic of corrugated material.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Cardboard has a wavy inner layer for strength, while corrugated is completely flat.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">This reverses the definitions; the 'wavy' or fluted layer is the defining characteristic of corrugated material.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The material choice depends on protection needs, and corrugated is specifically used for sensitive scientific equipment due to its cushioning.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Corrugated is only used for heavy machinery, while cardboard is used for scientific instruments.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The material choice depends on protection needs, and corrugated is specifically used for sensitive scientific equipment due to its cushioning.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="1">
+          <div class="q-header">
+            <span class="q-number">Question 2</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">Why is the fluting in a corrugated box shaped like a series of arches?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="While air is trapped in the flutes, the primary engineering purpose is structural support rather than thermal insulation.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">To allow for better airflow and temperature control inside the box.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While air is trapped in the flutes, the primary engineering purpose is structural support rather than thermal insulation.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="While corrugated is lightweight, the arch shape actually uses more paper surface area than a flat sheet to gain its strength.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">To reduce the amount of paper needed, making the box lighter and cheaper.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While corrugated is lightweight, the arch shape actually uses more paper surface area than a flat sheet to gain its strength.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="true" data-rationale="The arch is a strong geometric form that provides vertical stacking strength and protects against compression.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Arches distribute loads across the structure rather than concentrating force at a single point.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The arch is a strong geometric form that provides vertical stacking strength and protects against compression.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The wavy shape is intended to provide rigidity and strength, not flexibility for bending.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">The wavy shape allows the box to bend more easily during the manufacturing process.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The wavy shape is intended to provide rigidity and strength, not flexibility for bending.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="2">
+          <div class="q-header">
+            <span class="q-number">Question 3</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">When constructing a box, how can you distinguish the outer liner from the inner liner?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="The texture is actually found on the inner layer due to the attachment of the fluting, while the outer layer remains smooth.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">The outer layer is textured, while the inner layer is completely smooth.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The texture is actually found on the inner layer due to the attachment of the fluting, while the outer layer remains smooth.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="The manufacturing process leaves a visible or tactile hint of the fluting on the inner liner, while the outer face is optimized for smoothness.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">The outer layer is usually completely smooth, while the inner layer has a slight texture from the fluting.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The manufacturing process leaves a visible or tactile hint of the fluting on the inner liner, while the outer face is optimized for smoothness.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="Printing typically occurs on the outer layer for identification and branding purposes.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">The inner layer is always printed with the part number, while the outer layer is blank.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Printing typically occurs on the outer layer for identification and branding purposes.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The script explicitly states that identifying the difference is important for proper box construction.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">There is no physical difference; they are identical and interchangeable.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The script explicitly states that identifying the difference is important for proper box construction.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="3">
+          <div class="q-header">
+            <span class="q-number">Question 4</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">Which flute type is the tallest and thickest, measuring approximately <span class="math"><span class="frac"><span class="frac-num">1</span><span class="frac-den">4</span></span></span> inch?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="C flute is a medium-sized flute that sits between the sizes of A and B.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">C Flute</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">C flute is a medium-sized flute that sits between the sizes of A and B.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="B flute is thinner than A, measuring approximately $\frac{1}{8}$ inch.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">B Flute</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">B flute is thinner than A, measuring approximately <span class="math"><span class="frac"><span class="frac-num">1</span><span class="frac-den">8</span></span></span> inch.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="true" data-rationale="A flute provides the most cushioning and stacking strength due to having the tallest arches.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">A Flute</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">A flute provides the most cushioning and stacking strength due to having the tallest arches.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="E flute is very thin, around $\frac{1}{16}$ inch, and is used mainly for retail packaging.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">E Flute</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">E flute is very thin, around <span class="math"><span class="frac"><span class="frac-num">1</span><span class="frac-den">16</span></span></span> inch, and is used mainly for retail packaging.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="4">
+          <div class="q-header">
+            <span class="q-number">Question 5</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">A box is described as 'Double-wall' construction. How many total layers of paper does this box contain?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="A 3-layer structure (outer, flute, inner) describes a standard single-wall box.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">3 layers</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">A 3-layer structure (outer, flute, inner) describes a standard single-wall box.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="Corrugated structures always have an odd number of layers because fluting must be sandwiched between liners.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">4 layers</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Corrugated structures always have an odd number of layers because fluting must be sandwiched between liners.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="true" data-rationale="Double-wall consists of an outer liner, fluting, middle liner, another layer of fluting, and an inner liner.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">5 layers</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Double-wall consists of an outer liner, fluting, middle liner, another layer of fluting, and an inner liner.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="Double-wall construction ends with a liner on both sides, resulting in an odd total count of components.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">6 layers</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Double-wall construction ends with a liner on both sides, resulting in an odd total count of components.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="5">
+          <div class="q-header">
+            <span class="q-number">Question 6</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">What does the Edge Crush Test (ECT) specifically measure?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="Puncture resistance is measured by the Mullen Burst test, not the ECT.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">The amount of pressure required to puncture the face of the board.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Puncture resistance is measured by the Mullen Burst test, not the ECT.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="ECT is critical for palletized shipping because it predicts how well boxes can be stacked on top of each other.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">How much vertical compression force the board can handle on its edge before collapsing.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">ECT is critical for palletized shipping because it predicts how well boxes can be stacked on top of each other.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="While paper weight affects ECT, the test itself measures the structural failure point under force.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">The weight of the paper used in the inner and outer liners.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While paper weight affects ECT, the test itself measures the structural failure point under force.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="Moisture resistance is a separate concern from the standard physical strength tests like ECT.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">The level of moisture a box can absorb before it loses its shape.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Moisture resistance is a separate concern from the standard physical strength tests like ECT.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="6">
+          <div class="q-header">
+            <span class="q-number">Question 7</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">At Franklin August, which two designations are often used interchangeably to refer to the same physical board grade?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="These are two different testing standards (Edge Crush vs. Mullen Burst) that result in the same grade of material.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">32 ECT and 200C</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">These are two different testing standards (Edge Crush vs. Mullen Burst) that result in the same grade of material.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="V3C is a high-performance material that typically has a higher performance rating than standard 44 ECT.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">44 ECT and V3C</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">V3C is a high-performance material that typically has a higher performance rating than standard 44 ECT.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="These refer to the physical size of the fluting arches, which are distinct and not interchangeable.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">A Flute and B Flute</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">These refer to the physical size of the fluting arches, which are distinct and not interchangeable.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="These refer to different structural assemblies (3 layers vs. 5 layers) and are never used interchangeably.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Single-wall and Double-wall</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">These refer to different structural assemblies (3 layers vs. 5 layers) and are never used interchangeably.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="7">
+          <div class="q-header">
+            <span class="q-number">Question 8</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">What is a common misconception about the high-performance material V3C?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="V3C is actually used for technical, heavy-duty, or military-grade needs.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">That it is used for lightweight retail items.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">V3C is actually used for technical, heavy-duty, or military-grade needs.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="V3C is a high-performance single-wall material; triple-wall is a much heavier product not used on the BioTek line.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">That it is a triple-wall construction.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">V3C is a high-performance single-wall material; triple-wall is a much heavier product not used on the BioTek line.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="V3C is specifically used for its superior stacking strength in technical shipping applications.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">That it cannot be used for palletized shipping.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">V3C is specifically used for its superior stacking strength in technical shipping applications.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="V3C is a paper-based linerboard grade, though it uses stiffer, higher-quality paper.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">That it is made entirely of recycled plastic.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">V3C is a paper-based linerboard grade, though it uses stiffer, higher-quality paper.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="8">
+          <div class="q-header">
+            <span class="q-number">Question 9</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">If a box is stacked on its side so the flutes run horizontally, what is the likely result?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="true" data-rationale="The vertical orientation of flutes is what provides the structural 'arches' needed to support top-down pressure.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">The stacking strength will significantly drop because the arches are not oriented to resist the load.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The vertical orientation of flutes is what provides the structural 'arches' needed to support top-down pressure.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="Puncture resistance (Mullen Burst) is a property of the material itself and does not change based on orientation.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">The box will be more resistant to side impacts but lose its puncture resistance.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Puncture resistance (Mullen Burst) is a property of the material itself and does not change based on orientation.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="Loading a flute perpendicular to its direction is the weakest possible way to apply force to corrugated board.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">The box will be able to hold more weight because the load is distributed over a wider area.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Loading a flute perpendicular to its direction is the weakest possible way to apply force to corrugated board.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The geometric orientation of the fluting is the primary source of a box's stacking strength.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">There is no difference in strength as long as the box is taped correctly.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The geometric orientation of the fluting is the primary source of a box's stacking strength.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="9">
+          <div class="q-header">
+            <span class="q-number">Question 10</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">Box dimensions on a Bill of Materials (BOM) are always written in what sequence and measurement type?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="Dimensions are always based on the interior to ensure the product fits, and the sequence starts with Length.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">Exterior dimensions in the sequence Depth <span class="math">×</span> Width <span class="math">×</span> Length.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Dimensions are always based on the interior to ensure the product fits, and the sequence starts with Length.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="L $\times$ W $\times$ D is the industry standard, and interior measurements are used so users know if their equipment will fit.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">Interior dimensions in the sequence Length <span class="math">×</span> Width <span class="math">×</span> Depth.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">L <span class="math">×</span> W <span class="math">×</span> D is the industry standard, and interior measurements are used so users know if their equipment will fit.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="Length (the longest opening dimension) must always come first in the standard L $\times$ W $\times$ D sequence.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">Interior dimensions in the sequence Width <span class="math">×</span> Depth <span class="math">×</span> Length.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Length (the longest opening dimension) must always come first in the standard L <span class="math">×</span> W <span class="math">×</span> D sequence.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="Exterior dimensions are larger than interior dimensions and are typically only used for pallet calculations, not the standard BOM description.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">Exterior dimensions in the sequence Length <span class="math">×</span> Width <span class="math">×</span> Depth.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Exterior dimensions are larger than interior dimensions and are typically only used for pallet calculations, not the standard BOM description.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="10">
+          <div class="q-header">
+            <span class="q-number">Question 11</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">How are fractional dimensions handled when creating a Franklin August part number for a box?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="The system avoids rounding and instead uses a specific truncation method for part numbering.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">The fraction is rounded up to the nearest whole number.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The system avoids rounding and instead uses a specific truncation method for part numbering.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="false" data-rationale="While it may look like rounding down, the rule is to simply include the whole number regardless of the fraction's value.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">The fraction is rounded down to the nearest whole number.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">While it may look like rounding down, the rule is to simply include the whole number regardless of the fraction's value.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="true" data-rationale="To simplify part numbers, the whole number designation is used directly without any mathematical rounding.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">The whole number is used without rounding (e.g., <span class="math">10 <span class="frac"><span class="frac-num">1</span><span class="frac-den">2</span></span></span> becomes '10').</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">To simplify part numbers, the whole number designation is used directly without any mathematical rounding.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="Part numbers for corrugated items at Franklin August do not include decimals.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">A decimal point is added to the part number (e.g., <span class="math">10.5</span>).</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Part numbers for corrugated items at Franklin August do not include decimals.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      
+        <div class="question" data-index="11">
+          <div class="q-header">
+            <span class="q-number">Question 12</span>
+            <span class="q-of">/ 12</span>
+          </div>
+          <div class="q-text">What does the prefix '49-' indicate in a Franklin August part number?</div>
+          
+          <div class="options">
+        <div class="option-wrapper">
+          <button class="option" data-label="A" data-correct="false" data-rationale="Wooden components use a different prefix in the Franklin August system.">
+            <span class="opt-label">A</span>
+            <span class="opt-text">The item is a wooden shipping pallet.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="A">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Wooden components use a different prefix in the Franklin August system.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="B" data-correct="true" data-rationale="Prefixes allow employees to identify the material type and processing (like printing) at a glance.">
+            <span class="opt-label">B</span>
+            <span class="opt-text">The item is a printed corrugated box.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="B">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Prefixes allow employees to identify the material type and processing (like printing) at a glance.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="C" data-correct="false" data-rationale="Foam and inserts are categorized under separate prefixes from corrugated boxes.">
+            <span class="opt-label">C</span>
+            <span class="opt-text">The item is a protective foam insert.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="C">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">Foam and inserts are categorized under separate prefixes from corrugated boxes.</div>
+          </div>
+        </div>
+      
+        <div class="option-wrapper">
+          <button class="option" data-label="D" data-correct="false" data-rationale="The prefix denotes the general category (printed corrugated), while the material grade is specified in the description.">
+            <span class="opt-label">D</span>
+            <span class="opt-text">The box is made of V3C high-performance material.</span>
+          </button>
+          <div class="option-feedback hidden" data-for="D">
+            <div class="feedback-status"></div>
+            <div class="feedback-rationale">The prefix denotes the general category (printed corrugated), while the material grade is specified in the description.</div>
+          </div>
+        </div>
+      </div>
+          <button class="next-btn hidden">Next Question →</button>
+        </div>
+      </div>
+  <div class="results" id="results">
+    <h2>Quiz Complete!</h2>
+    <div class="score" id="score">0%</div>
+    <div class="score-text" id="score-text"></div>
+    <button class="restart-btn" onclick="restart()">Try Again</button>
+  </div>
+</div>
+<script>
+const quizData = [{"question":"What is the primary structural difference between cardboard and corrugated material?","hint":"","options":[{"label":"A","text":"Cardboard consists of a single thick sheet of paper, while corrugated uses a sandwich structure with a fluted medium.","isCorrect":true,"rationale":"Corrugated material is engineered with an inner liner, outer liner, and a wavy layer in between, unlike the solid single layer of cardboard."},{"label":"B","text":"Corrugated is made from recycled plastic, whereas cardboard is made strictly from wood pulp.","isCorrect":false,"rationale":"Both materials are typically paper-based; the difference lies in their geometric construction rather than their base material."},{"label":"C","text":"Cardboard has a wavy inner layer for strength, while corrugated is completely flat.","isCorrect":false,"rationale":"This reverses the definitions; the 'wavy' or fluted layer is the defining characteristic of corrugated material."},{"label":"D","text":"Corrugated is only used for heavy machinery, while cardboard is used for scientific instruments.","isCorrect":false,"rationale":"The material choice depends on protection needs, and corrugated is specifically used for sensitive scientific equipment due to its cushioning."}]},{"question":"Why is the fluting in a corrugated box shaped like a series of arches?","hint":"","options":[{"label":"A","text":"To allow for better airflow and temperature control inside the box.","isCorrect":false,"rationale":"While air is trapped in the flutes, the primary engineering purpose is structural support rather than thermal insulation."},{"label":"B","text":"To reduce the amount of paper needed, making the box lighter and cheaper.","isCorrect":false,"rationale":"While corrugated is lightweight, the arch shape actually uses more paper surface area than a flat sheet to gain its strength."},{"label":"C","text":"Arches distribute loads across the structure rather than concentrating force at a single point.","isCorrect":true,"rationale":"The arch is a strong geometric form that provides vertical stacking strength and protects against compression."},{"label":"D","text":"The wavy shape allows the box to bend more easily during the manufacturing process.","isCorrect":false,"rationale":"The wavy shape is intended to provide rigidity and strength, not flexibility for bending."}]},{"question":"When constructing a box, how can you distinguish the outer liner from the inner liner?","hint":"","options":[{"label":"A","text":"The outer layer is textured, while the inner layer is completely smooth.","isCorrect":false,"rationale":"The texture is actually found on the inner layer due to the attachment of the fluting, while the outer layer remains smooth."},{"label":"B","text":"The outer layer is usually completely smooth, while the inner layer has a slight texture from the fluting.","isCorrect":true,"rationale":"The manufacturing process leaves a visible or tactile hint of the fluting on the inner liner, while the outer face is optimized for smoothness."},{"label":"C","text":"The inner layer is always printed with the part number, while the outer layer is blank.","isCorrect":false,"rationale":"Printing typically occurs on the outer layer for identification and branding purposes."},{"label":"D","text":"There is no physical difference; they are identical and interchangeable.","isCorrect":false,"rationale":"The script explicitly states that identifying the difference is important for proper box construction."}]},{"question":"Which flute type is the tallest and thickest, measuring approximately $\\frac{1}{4}$ inch?","hint":"","options":[{"label":"A","text":"C Flute","isCorrect":false,"rationale":"C flute is a medium-sized flute that sits between the sizes of A and B."},{"label":"B","text":"B Flute","isCorrect":false,"rationale":"B flute is thinner than A, measuring approximately $\\frac{1}{8}$ inch."},{"label":"C","text":"A Flute","isCorrect":true,"rationale":"A flute provides the most cushioning and stacking strength due to having the tallest arches."},{"label":"D","text":"E Flute","isCorrect":false,"rationale":"E flute is very thin, around $\\frac{1}{16}$ inch, and is used mainly for retail packaging."}]},{"question":"A box is described as 'Double-wall' construction. How many total layers of paper does this box contain?","hint":"","options":[{"label":"A","text":"3 layers","isCorrect":false,"rationale":"A 3-layer structure (outer, flute, inner) describes a standard single-wall box."},{"label":"B","text":"4 layers","isCorrect":false,"rationale":"Corrugated structures always have an odd number of layers because fluting must be sandwiched between liners."},{"label":"C","text":"5 layers","isCorrect":true,"rationale":"Double-wall consists of an outer liner, fluting, middle liner, another layer of fluting, and an inner liner."},{"label":"D","text":"6 layers","isCorrect":false,"rationale":"Double-wall construction ends with a liner on both sides, resulting in an odd total count of components."}]},{"question":"What does the Edge Crush Test (ECT) specifically measure?","hint":"","options":[{"label":"A","text":"The amount of pressure required to puncture the face of the board.","isCorrect":false,"rationale":"Puncture resistance is measured by the Mullen Burst test, not the ECT."},{"label":"B","text":"How much vertical compression force the board can handle on its edge before collapsing.","isCorrect":true,"rationale":"ECT is critical for palletized shipping because it predicts how well boxes can be stacked on top of each other."},{"label":"C","text":"The weight of the paper used in the inner and outer liners.","isCorrect":false,"rationale":"While paper weight affects ECT, the test itself measures the structural failure point under force."},{"label":"D","text":"The level of moisture a box can absorb before it loses its shape.","isCorrect":false,"rationale":"Moisture resistance is a separate concern from the standard physical strength tests like ECT."}]},{"question":"At Franklin August, which two designations are often used interchangeably to refer to the same physical board grade?","hint":"","options":[{"label":"A","text":"32 ECT and 200C","isCorrect":true,"rationale":"These are two different testing standards (Edge Crush vs. Mullen Burst) that result in the same grade of material."},{"label":"B","text":"44 ECT and V3C","isCorrect":false,"rationale":"V3C is a high-performance material that typically has a higher performance rating than standard 44 ECT."},{"label":"C","text":"A Flute and B Flute","isCorrect":false,"rationale":"These refer to the physical size of the fluting arches, which are distinct and not interchangeable."},{"label":"D","text":"Single-wall and Double-wall","isCorrect":false,"rationale":"These refer to different structural assemblies (3 layers vs. 5 layers) and are never used interchangeably."}]},{"question":"What is a common misconception about the high-performance material V3C?","hint":"","options":[{"label":"A","text":"That it is used for lightweight retail items.","isCorrect":false,"rationale":"V3C is actually used for technical, heavy-duty, or military-grade needs."},{"label":"B","text":"That it is a triple-wall construction.","isCorrect":true,"rationale":"V3C is a high-performance single-wall material; triple-wall is a much heavier product not used on the BioTek line."},{"label":"C","text":"That it cannot be used for palletized shipping.","isCorrect":false,"rationale":"V3C is specifically used for its superior stacking strength in technical shipping applications."},{"label":"D","text":"That it is made entirely of recycled plastic.","isCorrect":false,"rationale":"V3C is a paper-based linerboard grade, though it uses stiffer, higher-quality paper."}]},{"question":"If a box is stacked on its side so the flutes run horizontally, what is the likely result?","hint":"","options":[{"label":"A","text":"The stacking strength will significantly drop because the arches are not oriented to resist the load.","isCorrect":true,"rationale":"The vertical orientation of flutes is what provides the structural 'arches' needed to support top-down pressure."},{"label":"B","text":"The box will be more resistant to side impacts but lose its puncture resistance.","isCorrect":false,"rationale":"Puncture resistance (Mullen Burst) is a property of the material itself and does not change based on orientation."},{"label":"C","text":"The box will be able to hold more weight because the load is distributed over a wider area.","isCorrect":false,"rationale":"Loading a flute perpendicular to its direction is the weakest possible way to apply force to corrugated board."},{"label":"D","text":"There is no difference in strength as long as the box is taped correctly.","isCorrect":false,"rationale":"The geometric orientation of the fluting is the primary source of a box's stacking strength."}]},{"question":"Box dimensions on a Bill of Materials (BOM) are always written in what sequence and measurement type?","hint":"","options":[{"label":"A","text":"Exterior dimensions in the sequence Depth $\\times$ Width $\\times$ Length.","isCorrect":false,"rationale":"Dimensions are always based on the interior to ensure the product fits, and the sequence starts with Length."},{"label":"B","text":"Interior dimensions in the sequence Length $\\times$ Width $\\times$ Depth.","isCorrect":true,"rationale":"L $\\times$ W $\\times$ D is the industry standard, and interior measurements are used so users know if their equipment will fit."},{"label":"C","text":"Interior dimensions in the sequence Width $\\times$ Depth $\\times$ Length.","isCorrect":false,"rationale":"Length (the longest opening dimension) must always come first in the standard L $\\times$ W $\\times$ D sequence."},{"label":"D","text":"Exterior dimensions in the sequence Length $\\times$ Width $\\times$ Depth.","isCorrect":false,"rationale":"Exterior dimensions are larger than interior dimensions and are typically only used for pallet calculations, not the standard BOM description."}]},{"question":"How are fractional dimensions handled when creating a Franklin August part number for a box?","hint":"","options":[{"label":"A","text":"The fraction is rounded up to the nearest whole number.","isCorrect":false,"rationale":"The system avoids rounding and instead uses a specific truncation method for part numbering."},{"label":"B","text":"The fraction is rounded down to the nearest whole number.","isCorrect":false,"rationale":"While it may look like rounding down, the rule is to simply include the whole number regardless of the fraction's value."},{"label":"C","text":"The whole number is used without rounding (e.g., $10 \\frac{1}{2}$ becomes '10').","isCorrect":true,"rationale":"To simplify part numbers, the whole number designation is used directly without any mathematical rounding."},{"label":"D","text":"A decimal point is added to the part number (e.g., $10.5$).","isCorrect":false,"rationale":"Part numbers for corrugated items at Franklin August do not include decimals."}]},{"question":"What does the prefix '49-' indicate in a Franklin August part number?","hint":"","options":[{"label":"A","text":"The item is a wooden shipping pallet.","isCorrect":false,"rationale":"Wooden components use a different prefix in the Franklin August system."},{"label":"B","text":"The item is a printed corrugated box.","isCorrect":true,"rationale":"Prefixes allow employees to identify the material type and processing (like printing) at a glance."},{"label":"C","text":"The item is a protective foam insert.","isCorrect":false,"rationale":"Foam and inserts are categorized under separate prefixes from corrugated boxes."},{"label":"D","text":"The box is made of V3C high-performance material.","isCorrect":false,"rationale":"The prefix denotes the general category (printed corrugated), while the material grade is specified in the description."}]}];
+const tr = {"correct":"Correct!","incorrect":"Incorrect","next":"Next Question →","seeResults":"See Results","complete":"Quiz Complete!","scoreText":"You got {correct} out of {total} correct","tryAgain":"Try Again","rightAnswer":"Right answer","notQuite":"Not quite"};
+let currentQ = 0, correctCount = 0, answered = false;
+
+function init() {
+  document.querySelectorAll('.question').forEach((q, i) => q.classList.toggle('active', i === 0));
+  updateProgress();
+  document.querySelectorAll('.option').forEach(opt => opt.addEventListener('click', () => selectOption(opt)));
+  document.querySelectorAll('.next-btn').forEach(btn => btn.addEventListener('click', nextQuestion));
+}
+
+function selectOption(opt) {
+  if (answered) return;
+  answered = true;
+  const q = opt.closest('.question');
+  const options = q.querySelectorAll('.option');
+  const nextBtn = q.querySelector('.next-btn');
+  const isCorrect = opt.dataset.correct === 'true';
+  
+  // Mark all options as disabled
+  options.forEach(o => o.classList.add('disabled'));
+  
+  // Style selected option
+  opt.classList.add('selected', isCorrect ? 'correct' : 'incorrect');
+  
+  // Show correct answer if wrong
+  if (!isCorrect) {
+    const correctOpt = [...options].find(o => o.dataset.correct === 'true');
+    if (correctOpt) correctOpt.classList.add('show-correct');
+  }
+  
+  if (isCorrect) correctCount++;
+  
+  // Show feedback for ALL options that have rationale
+  options.forEach(o => {
+    const wrapper = o.closest('.option-wrapper');
+    const feedback = wrapper.querySelector('.option-feedback');
+    const rationale = o.dataset.rationale;
+    const isThisCorrect = o.dataset.correct === 'true';
+    
+    if (rationale && rationale.trim()) {
+      feedback.classList.remove('hidden');
+      feedback.classList.add(isThisCorrect ? 'correct-feedback' : 'incorrect-feedback');
+      
+      const statusEl = feedback.querySelector('.feedback-status');
+      statusEl.className = 'feedback-status ' + (isThisCorrect ? 'correct' : 'incorrect');
+      statusEl.innerHTML = isThisCorrect 
+        ? '✓ ' + tr.rightAnswer
+        : '✗ ' + tr.notQuite;
+    }
+  });
+  
+  nextBtn.classList.remove('hidden');
+  if (currentQ === quizData.length - 1) nextBtn.textContent = tr.seeResults;
+}
+
+function nextQuestion() {
+  answered = false;
+  currentQ++;
+  if (currentQ >= quizData.length) { showResults(); return; }
+  document.querySelectorAll('.question').forEach((q, i) => q.classList.toggle('active', i === currentQ));
+  updateProgress();
+}
+
+function updateProgress() {
+  document.querySelector('.progress-fill').style.width = (currentQ / quizData.length * 100) + '%';
+}
+
+function showResults() {
+  document.querySelectorAll('.question').forEach(q => q.classList.remove('active'));
+  document.getElementById('results').classList.add('active');
+  const pct = Math.round((correctCount / quizData.length) * 100);
+  document.getElementById('score').textContent = pct + '%';
+  document.getElementById('score-text').textContent = tr.scoreText.replace('{correct}', correctCount).replace('{total}', quizData.length);
+  document.querySelector('.progress-fill').style.width = '100%';
+}
+
+function restart() {
+  currentQ = 0; correctCount = 0; answered = false;
+  document.getElementById('results').classList.remove('active');
+  document.querySelectorAll('.question').forEach((q, i) => {
+    q.classList.toggle('active', i === 0);
+    q.querySelectorAll('.option').forEach(o => o.classList.remove('selected', 'correct', 'incorrect', 'disabled', 'show-correct'));
+    q.querySelectorAll('.option-feedback').forEach(f => {
+      f.classList.add('hidden');
+      f.classList.remove('correct-feedback', 'incorrect-feedback');
+    });
+    const btn = q.querySelector('.next-btn');
+    btn.classList.add('hidden');
+    btn.textContent = tr.next;
+  });
+  updateProgress();
+}
+
+init();
+</script>
+</body>
+</html>

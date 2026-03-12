@@ -1,0 +1,62 @@
+What is the primary physical difference between cardboard and corrugated material?,"Cardboard is a single thick sheet of paper, while corrugated is a multi-layered sandwich structure."
+What are the three layers that compose a standard single-wall corrugated sheet?,"An outer liner, an inner liner, and a wavy middle layer called fluting or medium."
+"What is the specific name for the wavy, rippled layer in corrugated board?",Fluting (or medium).
+Which geometric form makes corrugated fluting an effective structural engineering component?,The arch.
+How do the small arches in corrugated fluting protect the contents of a box?,They distribute loads across the whole structure instead of concentrating force at one point.
+What visual or tactile characteristic identifies the outer layer of a corrugated box?,It is usually completely smooth.
+What visual or tactile characteristic identifies the inner layer of a corrugated box?,It has a slight texture that reveals the attached fluted layer.
+Why is corrugated considered the best material for shipping sensitive scientific equipment?,"It provides protection from impact, compression, and vibration during transit."
+What are the three secondary benefits of corrugated packaging mentioned in the training?,"It is lightweight, cost-effective, and recyclable."
+How are corrugated flute types categorized for identification?,"They are categorized by letters, such as A, B, C, E, and F."
+What two physical characteristics does a flute's letter designation indicate?,The height and density of the wave.
+What was the historical basis for assigning letters to flute types?,The order in which the flute types were developed.
+What is the approximate height of an A flute?,$1/4$ inch.
+Which flute type provides the best cushioning and stacking strength due to having the tallest waves?,A flute.
+What is the approximate height of a B flute?,$1/8$ inch.
+What is the primary structural advantage of B flute's higher flute density?,It provides excellent resistance to crushing from the side.
+Which flute type is the most widely used in the corrugated industry?,C flute.
+What makes C flute the standard choice for general shipping boxes?,"It provides a balance of cushioning, stacking strength, and printability."
+What is the approximate height of an E flute?,$1/16$ inch.
+In what specific application are E and F flutes most commonly used?,Retail packaging and small product boxes requiring smooth printing surfaces.
+Which flute types are primarily used for single-wall construction at Franklin August?,B and C flutes.
+How many total layers are found in a single-wall corrugated box?,Three layers.
+How many total layers are found in a double-wall corrugated box?,Five layers.
+What component separates the two layers of fluting in double-wall construction?,A middle liner.
+What is the structural advantage of double-wall construction over single-wall?,It is significantly stronger and heavier for handling higher compression loads.
+Which wall construction is typically used for Epoch 2 and Gas Controller sets?,Single-wall.
+Which wall construction is preferred for heavier units like the Synergy or Cytation?,Double-wall.
+"In packaging design, what is the negative result of 'over-speccing' a box?",It adds unnecessary cost and weight without adding value.
+"In packaging design, what is the risk of 'under-speccing' a box?",It increases the risk of product damage.
+What does the acronym ECT stand for in the corrugated industry?,Edge Crush Test.
+What physical property does the Edge Crush Test (ECT) measure?,How much vertical compression force the board can handle before collapsing.
+In what unit of measurement is an ECT rating expressed?,Pounds per lineal inch.
+What does the Mullen Burst test specifically measure?,The amount of pressure required to puncture through the face of the board.
+In what unit of measurement is a Mullen Burst rating expressed?,Pounds per square inch.
+What does the 'C' identify in a board grade labeled as '200C'?,Single-wall C flute board.
+Which two designations are used interchangeably for the standard single-wall workhorse grade?,32 ECT and 200C.
+What is the maximum carton weight capacity for 32 ECT (200C) board?,65 pounds.
+What is the maximum carton weight capacity for 44 ECT (275C) single-wall board?,95 pounds.
+What is the standard ECT rating for double-wall board used at Franklin August?,48 ECT.
+Which combination of flute types is found in a 350BC double-wall board?,B flute and C flute.
+What is the maximum carton weight capacity for 48 ECT double-wall board?,100 pounds.
+What type of material is V3C?,High-performance single-wall corrugated board.
+What does the 'V' stand for in the material V3C?,A proprietary linerboard grade.
+Why is V3C used instead of standard C flute in technical applications?,It provides better stacking strength while maintaining a single-wall profile.
+What is a common misconception about the material V3C?,That it is triple-wall board.
+Why is ECT more relevant than the Mullen Burst test for modern palletized shipping?,"Modern shipping involves stacking boxes, and ECT measures the vertical compression those stacks create."
+What was the primary concern the Mullen Burst test was originally designed to address?,Puncture resistance from individual handling and impact.
+In which direction should flutes be oriented to maximize the stacking strength of a box?,Vertically (top to bottom).
+How does rotating a box 90 degrees onto its side affect its strength?,The stacking strength drops significantly because the load is perpendicular to the arches.
+What environmental factor significantly weakens corrugated board by affecting its paper base?,Moisture or humidity.
+Which Bill of Materials (BOM) prefix identifies a printed corrugated box?,49-.
+What is the standard sequence for writing box dimensions?,Length by Width by Depth (L x W x D).
+Are the dimensions listed on a box spec interior or exterior measurements?,Interior dimensions.
+How is the 'Length' of a box defined in a dimension sequence?,The longest opening dimension.
+How is the 'Width' of a box defined in a dimension sequence?,The shorter opening dimension.
+"In a Franklin August part number, how are dimensions that include fractions represented?",Only the whole number is used (the fraction is truncated).
+"If a box dimension is $10.5$ inches, what number would appear in the part number?",10.
+"Typically, how much larger are the exterior dimensions of a box compared to the interior dimensions?",$1/4$ to $1/2$ inch.
+"In a Franklin August corrugated part number, what does the first number indicate?",The direction of the flutes.
+What does the acronym RSC stand for?,Regular Slotted Container.
+What is the characteristic closing mechanism of an RSC style box?,Four flaps on the top and bottom that fold together.
+What is the purpose of understanding the reasoning behind box specifications?,To work confidently and identify potential problems when materials do not look right.
